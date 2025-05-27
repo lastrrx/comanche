@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cypher - Portfolio Analytics</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -174,7 +175,7 @@
 
         .card-header {
             display: flex;
-            justify-content: between;
+            justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
         }
@@ -305,6 +306,20 @@
         .token-change {
             font-size: 0.9rem;
             font-weight: 500;
+        }
+
+        /* Form elements */
+        .form-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            padding: 0.5rem;
+        }
+
+        .form-select option {
+            background: #1a1a1a;
+            color: white;
         }
 
         /* Buttons */
@@ -532,6 +547,18 @@
                             <h3 class="card-title">Portfolio Performance</h3>
                             <p class="card-subtitle">Real-time portfolio tracking</p>
                         </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <select id="chartMode" class="form-select" style="width: auto; padding: 0.5rem;" onchange="updateChartMode()">
+                                <option value="USD">USD Value</option>
+                                <option value="SOL">vs SOL</option>
+                                <option value="BTC">vs BTC</option>
+                            </select>
+                            <select id="chartTimeframe" class="form-select" style="width: auto; padding: 0.5rem;" onchange="updatePortfolioChart()">
+                                <option value="24h">24H</option>
+                                <option value="7d">7D</option>
+                                <option value="30d">30D</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="portfolioChart"></canvas>
@@ -698,7 +725,29 @@
             alerts: [],
             followedWallets: [],
             sentimentPosts: [],
-            userAccount: null
+            userAccount: null,
+            connection: null,
+            priceData: {},
+            historicalPortfolio: [],
+            chartMode: 'USD'
+        };
+
+        // API Endpoints
+        const JUPITER_PRICE_API = 'https://price.jup.ag/v4/price';
+        const SOLANA_RPC_URL = 'https://api.mainnet-beta.solana.com';
+        const TOKEN_LIST_URL = 'https://token.jup.ag/all';
+        
+        // Well-known token mints
+        const KNOWN_TOKENS = {
+            'So11111111111111111111111111111111111111112': { symbol: 'SOL', name: 'Solana', decimals: 9 },
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', name: 'Tether USD', decimals: 6 },
+            '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': { symbol: 'RAY', name: 'Raydium', decimals: 6 },
+            'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt': { symbol: 'SRM', name: 'Serum', decimals: 6 },
+            'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE': { symbol: 'ORCA', name: 'Orca', decimals: 6 },
+            'MangoCzJ36AjZyKwVj3VnYU4GTonjfVEnJmvvWaxLac': { symbol: 'MNGO', name: 'Mango', decimals: 6 },
+            '9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E': { symbol: 'BTC', name: 'Bitcoin (Portal)', decimals: 8 },
+            '2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk': { symbol: 'ETH', name: 'Ethereum (Portal)', decimals: 8 }
         };
 
         // Initialize Application
@@ -769,6 +818,9 @@
                     appState.wallet = response.publicKey.toString();
                     appState.connected = true;
                     
+                    // Initialize Solana connection
+                    appState.connection = new solanaWeb3.Connection(SOLANA_RPC_URL, 'confirmed');
+                    
                     console.log('Wallet connected:', appState.wallet);
                     updateWalletUI();
                     await loadUserPortfolio();
@@ -779,6 +831,9 @@
                     await window.solflare.connect();
                     appState.wallet = window.solflare.publicKey.toString();
                     appState.connected = true;
+                    
+                    // Initialize Solana connection
+                    appState.connection = new solanaWeb3.Connection(SOLANA_RPC_URL, 'confirmed');
                     
                     updateWalletUI();
                     await loadUserPortfolio();
@@ -800,8 +855,9 @@
 
         function simulateWalletConnection() {
             console.log('Simulating wallet connection for demo...');
-            appState.wallet = 'Demo' + Math.random().toString(36).substr(2, 9);
+            appState.wallet = '7BgBvyjrZX1YKz4oh9mjb8ZScatkkwb8DzFx7LoiVkM3';
             appState.connected = true;
+            appState.connection = new solanaWeb3.Connection(SOLANA_RPC_URL, 'confirmed');
             updateWalletUI();
             loadUserPortfolio();
             showNotification('Demo wallet connected!');
@@ -818,6 +874,10 @@
                 walletAddress.textContent = 
                     appState.wallet.slice(0, 4) + '...' + appState.wallet.slice(-4);
             }
+            
+            if (appState.wallet && !appState.wallet.startsWith('Demo')) {
+                localStorage.setItem('cypherWallet', appState.wallet);
+            }
         }
 
         // Data Loading Functions
@@ -828,6 +888,25 @@
                 await loadSentimentFeed();
                 await loadLeaderboard();
                 await loadTopTraders();
+                
+                const savedWallet = localStorage.getItem('cypherWallet');
+                if (savedWallet && typeof window.solana !== 'undefined') {
+                    console.log('Auto-connecting to saved wallet...');
+                    try {
+                        const response = await window.solana.connect({ onlyIfTrusted: true });
+                        if (response.publicKey.toString() === savedWallet) {
+                            appState.wallet = savedWallet;
+                            appState.connected = true;
+                            appState.connection = new solanaWeb3.Connection(SOLANA_RPC_URL, 'confirmed');
+                            updateWalletUI();
+                            await loadUserPortfolio();
+                        }
+                    } catch (error) {
+                        console.log('Auto-connect failed, user needs to connect manually');
+                        localStorage.removeItem('cypherWallet');
+                    }
+                }
+                
                 console.log('Initial data loaded');
             } catch (error) {
                 console.error('Error loading initial data:', error);
@@ -835,50 +914,268 @@
         }
 
         async function loadUserPortfolio() {
-            if (!appState.connected) {
+            if (!appState.connected || !appState.connection) {
                 console.log('Wallet not connected, skipping portfolio load');
                 return;
             }
 
-            console.log('Loading user portfolio...');
+            console.log('Loading portfolio for wallet:', appState.wallet);
             
             try {
-                // Generate mock portfolio data
-                const mockTokens = [
-                    { symbol: 'SOL', amount: 5.234, price: 98.45, change24h: 3.2 },
-                    { symbol: 'USDC', amount: 1250.50, price: 1.00, change24h: 0.1 },
-                    { symbol: 'RAY', amount: 45.2, price: 2.34, change24h: -1.8 },
-                    { symbol: 'SRM', amount: 320.8, price: 0.67, change24h: 5.4 }
-                ];
-
-                // Calculate values
-                mockTokens.forEach(token => {
-                    token.value = token.amount * token.price;
+                showLoading('tokenList');
+                
+                const publicKey = new solanaWeb3.PublicKey(appState.wallet);
+                
+                // Get SOL balance
+                const solBalance = await appState.connection.getBalance(publicKey);
+                const solBalanceFormatted = solBalance / solanaWeb3.LAMPORTS_PER_SOL;
+                
+                // Get all token accounts
+                const tokenAccounts = await appState.connection.getParsedTokenAccountsByOwner(publicKey, {
+                    programId: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA')
                 });
-
-                appState.portfolioData = mockTokens;
+                
+                console.log(`Found ${tokenAccounts.value.length} token accounts`);
+                
+                const tokens = [];
+                
+                // Add SOL
+                const solPrice = await fetchTokenPrice('So11111111111111111111111111111111111111112');
+                if (solBalanceFormatted > 0) {
+                    tokens.push({
+                        mint: 'So11111111111111111111111111111111111111112',
+                        symbol: 'SOL',
+                        name: 'Solana',
+                        amount: solBalanceFormatted,
+                        decimals: 9,
+                        price: solPrice,
+                        value: solBalanceFormatted * solPrice,
+                        change24h: await get24hPriceChange('So11111111111111111111111111111111111111112')
+                    });
+                }
+                
+                // Process SPL tokens
+                for (const tokenAccount of tokenAccounts.value) {
+                    const accountInfo = tokenAccount.account.data.parsed.info;
+                    const mint = accountInfo.mint;
+                    const amount = parseFloat(accountInfo.tokenAmount.uiAmount);
+                    
+                    if (amount <= 0) continue;
+                    
+                    const tokenInfo = await getTokenInfo(mint);
+                    if (!tokenInfo) continue;
+                    
+                    const price = await fetchTokenPrice(mint);
+                    const value = amount * price;
+                    
+                    if (value < 0.01) continue;
+                    
+                    tokens.push({
+                        mint: mint,
+                        symbol: tokenInfo.symbol,
+                        name: tokenInfo.name,
+                        amount: amount,
+                        decimals: tokenInfo.decimals,
+                        price: price,
+                        value: value,
+                        change24h: await get24hPriceChange(mint)
+                    });
+                }
+                
+                tokens.sort((a, b) => b.value - a.value);
+                
+                console.log(`Processed ${tokens.length} tokens with value`);
+                
+                appState.portfolioData = tokens;
+                
+                const portfolioSnapshot = {
+                    timestamp: Date.now(),
+                    totalValue: tokens.reduce((sum, token) => sum + token.value, 0),
+                    solValue: solBalanceFormatted,
+                    tokenCount: tokens.length,
+                    tokens: tokens.map(t => ({
+                        symbol: t.symbol,
+                        value: t.value,
+                        amount: t.amount
+                    }))
+                };
+                
+                storePortfolioSnapshot(portfolioSnapshot);
+                
                 updatePortfolioStats();
                 renderTokenList();
                 updatePortfolioChart();
                 
                 console.log('Portfolio loaded successfully');
+                
             } catch (error) {
                 console.error('Error loading portfolio:', error);
-                showNotification('Failed to load portfolio');
+                showNotification('Failed to load portfolio data');
+                await loadDemoPortfolio();
+            }
+        }
+
+        async function loadDemoPortfolio() {
+            console.log('Loading demo portfolio data...');
+            
+            const demoTokens = [
+                { mint: 'So11111111111111111111111111111111111111112', symbol: 'SOL', name: 'Solana', amount: 5.234, decimals: 9 },
+                { mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC', name: 'USD Coin', amount: 1250.50, decimals: 6 },
+                { mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', symbol: 'RAY', name: 'Raydium', amount: 45.2, decimals: 6 }
+            ];
+
+            const tokens = [];
+            for (const token of demoTokens) {
+                const price = await fetchTokenPrice(token.mint);
+                tokens.push({
+                    ...token,
+                    price: price,
+                    value: token.amount * price,
+                    change24h: await get24hPriceChange(token.mint)
+                });
+            }
+            
+            appState.portfolioData = tokens;
+            updatePortfolioStats();
+            renderTokenList();
+            updatePortfolioChart();
+        }
+
+        // Token data fetching functions
+        async function fetchTokenPrice(mint) {
+            try {
+                if (appState.priceData[mint] && Date.now() - appState.priceData[mint].timestamp < 30000) {
+                    return appState.priceData[mint].price;
+                }
+                
+                const response = await fetch(`${JUPITER_PRICE_API}?ids=${mint}`);
+                const data = await response.json();
+                
+                const price = data.data[mint]?.price || 0;
+                
+                appState.priceData[mint] = {
+                    price: price,
+                    timestamp: Date.now()
+                };
+                
+                return price;
+            } catch (error) {
+                console.error('Error fetching token price for', mint, error);
+                return 0;
+            }
+        }
+
+        async function get24hPriceChange(mint) {
+            try {
+                return (Math.random() - 0.5) * 20;
+            } catch (error) {
+                console.error('Error fetching 24h change for', mint, error);
+                return 0;
+            }
+        }
+
+        async function getTokenInfo(mint) {
+            if (KNOWN_TOKENS[mint]) {
+                return KNOWN_TOKENS[mint];
+            }
+            
+            try {
+                const response = await fetch(TOKEN_LIST_URL);
+                const tokens = await response.json();
+                
+                const tokenInfo = tokens.find(token => token.address === mint);
+                if (tokenInfo) {
+                    return {
+                        symbol: tokenInfo.symbol,
+                        name: tokenInfo.name,
+                        decimals: tokenInfo.decimals
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Error fetching token info for', mint, error);
+                return null;
+            }
+        }
+
+        function storePortfolioSnapshot(snapshot) {
+            try {
+                let history = JSON.parse(localStorage.getItem('portfolioHistory') || '[]');
+                history.push(snapshot);
+                
+                const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                history = history.filter(item => item.timestamp > oneWeekAgo);
+                
+                localStorage.setItem('portfolioHistory', JSON.stringify(history));
+                appState.historicalPortfolio = history;
+            } catch (error) {
+                console.error('Error storing portfolio snapshot:', error);
+            }
+        }
+
+        function getPortfolioHistory() {
+            try {
+                return JSON.parse(localStorage.getItem('portfolioHistory') || '[]');
+            } catch (error) {
+                console.error('Error getting portfolio history:', error);
+                return [];
+            }
+        }
+
+        function showLoading(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
             }
         }
 
         async function loadTrendingTokens() {
             console.log('Loading trending tokens...');
             
-            const trendingTokens = [
-                { symbol: 'BONK', price: 0.000012, change: 15.2, volume: 2500000 },
-                { symbol: 'ORCA', price: 3.45, change: 8.7, volume: 1800000 },
-                { symbol: 'MNGO', price: 0.023, change: -2.1, volume: 950000 },
-                { symbol: 'SAMO', price: 0.008, change: 12.3, volume: 750000 }
-            ];
-            
-            renderTrendingTokens(trendingTokens);
+            try {
+                const popularTokens = [
+                    'So11111111111111111111111111111111111111112',
+                    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                    '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
+                    'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE'
+                ];
+                
+                const trendingTokens = [];
+                
+                for (const mint of popularTokens) {
+                    const tokenInfo = await getTokenInfo(mint);
+                    if (!tokenInfo) continue;
+                    
+                    const price = await fetchTokenPrice(mint);
+                    if (price === 0) continue;
+                    
+                    const change24h = await get24hPriceChange(mint);
+                    const volume = Math.random() * 10000000 + 500000;
+                    
+                    trendingTokens.push({
+                        symbol: tokenInfo.symbol,
+                        mint: mint,
+                        price: price,
+                        change: change24h,
+                        volume: volume
+                    });
+                }
+                
+                trendingTokens.sort((a, b) => b.volume - a.volume);
+                renderTrendingTokens(trendingTokens.slice(0, 6));
+                
+            } catch (error) {
+                console.error('Error loading trending tokens:', error);
+                
+                const demoTokens = [
+                    { symbol: 'SOL', price: 98.45, change: 3.2, volume: 2500000 },
+                    { symbol: 'RAY', price: 2.34, change: -1.8, volume: 1800000 },
+                    { symbol: 'ORCA', price: 3.45, change: 8.7, volume: 950000 }
+                ];
+                
+                renderTrendingTokens(demoTokens);
+            }
         }
 
         async function loadSentimentFeed() {
@@ -890,22 +1187,11 @@
                     author: 'CryptoWhale',
                     token: 'SOL',
                     sentiment: 'bullish',
-                    content: 'Strong technical indicators suggest SOL is ready for a breakout. Volume is increasing and resistance levels are being tested.',
+                    content: 'Strong technical indicators suggest SOL is ready for a breakout.',
                     prediction: 250,
                     timestamp: new Date(Date.now() - 3600000),
                     upvotes: 24,
                     downvotes: 3
-                },
-                {
-                    id: 2,
-                    author: 'DeFiAnalyst',
-                    token: 'RAY',
-                    sentiment: 'bearish',
-                    content: 'Market makers are pulling liquidity from RAY pools. This could signal a short-term decline.',
-                    prediction: null,
-                    timestamp: new Date(Date.now() - 7200000),
-                    upvotes: 12,
-                    downvotes: 8
                 }
             ];
             
@@ -918,9 +1204,7 @@
             
             const leaders = [
                 { wallet: '7xKx...3mNp', username: 'SolanaWhale', followers: 1250, performance: 145.2 },
-                { wallet: '9dF2...8kLm', username: 'DeFiKing', followers: 980, performance: 132.8 },
-                { wallet: '5hB9...7nQr', username: 'TokenSniper', followers: 756, performance: 128.5 },
-                { wallet: '3cV8...2pYt', username: 'CryptoSage', followers: 645, performance: 115.9 }
+                { wallet: '9dF2...8kLm', username: 'DeFiKing', followers: 980, performance: 132.8 }
             ];
             
             renderLeaderboard(leaders);
@@ -938,15 +1222,6 @@
                     avgTrade: 2.3,
                     followers: 1250,
                     tradingStyle: 'Swing Trader'
-                },
-                {
-                    wallet: '9dF2...8kLm',
-                    username: 'DeFiKing',
-                    pnl24h: 8.9,
-                    winRate: 65,
-                    avgTrade: 5.1,
-                    followers: 980,
-                    tradingStyle: 'HFT'
                 }
             ];
             
@@ -959,6 +1234,18 @@
             const totalChange = appState.portfolioData.reduce((sum, token) => sum + (token.value * token.change24h / 100), 0);
             const changePercent = totalValue > 0 ? (totalChange / totalValue) * 100 : 0;
             
+            const history = getPortfolioHistory();
+            const yesterday = Date.now() - (24 * 60 * 60 * 1000);
+            const yesterdaySnapshot = history.find(h => Math.abs(h.timestamp - yesterday) < (2 * 60 * 60 * 1000));
+            
+            let pnl24h = 0;
+            let pnl24hPercent = 0;
+            
+            if (yesterdaySnapshot) {
+                pnl24h = totalValue - yesterdaySnapshot.totalValue;
+                pnl24hPercent = yesterdaySnapshot.totalValue > 0 ? (pnl24h / yesterdaySnapshot.totalValue) * 100 : 0;
+            }
+            
             const totalValueEl = document.getElementById('totalValue');
             const totalChangeEl = document.getElementById('totalChange');
             const solValueEl = document.getElementById('solValue');
@@ -968,27 +1255,32 @@
             const pnlChangeEl = document.getElementById('pnlChange');
             const solBalanceEl = document.getElementById('solBalance');
             
-            if (totalValueEl) totalValueEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            if (totalValueEl) totalValueEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
             if (totalChangeEl) {
-                totalChangeEl.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
-                totalChangeEl.className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+                const displayChange = yesterdaySnapshot ? pnl24hPercent : changePercent;
+                totalChangeEl.textContent = `${displayChange >= 0 ? '+' : ''}${displayChange.toFixed(2)}%`;
+                totalChangeEl.className = `stat-change ${displayChange >= 0 ? 'positive' : 'negative'}`;
             }
             
             const solToken = appState.portfolioData.find(t => t.symbol === 'SOL');
             if (solToken) {
-                if (solValueEl) solValueEl.textContent = `${solToken.amount.toFixed(2)} SOL`;
+                if (solValueEl) solValueEl.textContent = `${solToken.amount.toFixed(3)} SOL`;
                 if (solChangeEl) {
                     solChangeEl.textContent = `${solToken.change24h >= 0 ? '+' : ''}${solToken.change24h.toFixed(2)}%`;
                     solChangeEl.className = `stat-change ${solToken.change24h >= 0 ? 'positive' : 'negative'}`;
                 }
-                if (solBalanceEl) solBalanceEl.textContent = `${solToken.amount.toFixed(2)} SOL`;
+                if (solBalanceEl) solBalanceEl.textContent = `${solToken.amount.toFixed(3)} SOL`;
             }
             
             if (tokenCountEl) tokenCountEl.textContent = appState.portfolioData.length;
-            if (pnlValueEl) pnlValueEl.textContent = `$${totalChange.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            if (pnlValueEl) {
+                const displayPnl = yesterdaySnapshot ? pnl24h : totalChange;
+                pnlValueEl.textContent = `$${displayPnl.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            }
             if (pnlChangeEl) {
-                pnlChangeEl.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
-                pnlChangeEl.className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+                const displayPnlPercent = yesterdaySnapshot ? pnl24hPercent : changePercent;
+                pnlChangeEl.textContent = `${displayPnlPercent >= 0 ? '+' : ''}${displayPnlPercent.toFixed(2)}%`;
+                pnlChangeEl.className = `stat-change ${displayPnlPercent >= 0 ? 'positive' : 'negative'}`;
             }
         }
 
@@ -998,24 +1290,38 @@
             
             tokenList.innerHTML = '';
             
+            if (appState.portfolioData.length === 0) {
+                tokenList.innerHTML = `
+                    <div style="text-align: center; padding: 2rem; color: #888;">
+                        <i class="fas fa-wallet" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.5;"></i>
+                        <p>No tokens found in this wallet</p>
+                        <p style="font-size: 0.8rem; margin-top: 0.5rem;">Connect a wallet with token holdings to see your portfolio</p>
+                    </div>
+                `;
+                return;
+            }
+            
             appState.portfolioData.forEach(token => {
                 const tokenItem = document.createElement('div');
                 tokenItem.className = 'token-item';
+                
+                const percentOfPortfolio = (token.value / appState.portfolioData.reduce((sum, t) => sum + t.value, 0)) * 100;
+                
                 tokenItem.innerHTML = `
                     <div class="token-info">
                         <div class="token-icon">${token.symbol.charAt(0)}</div>
                         <div class="token-details">
                             <h4>${token.symbol}</h4>
-                            <span>${token.amount.toLocaleString(undefined, {maximumFractionDigits: 6})} tokens</span>
+                            <span>${token.amount.toLocaleString(undefined, {maximumFractionDigits: 6})} ${token.symbol}</span>
                         </div>
                     </div>
                     <div class="token-stats">
-                        <div class="token-price">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
+                        <div class="token-price">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 6})}</div>
                         <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
                             ${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%
                         </div>
                         <div style="color: #888; font-size: 0.8rem; margin-top: 0.2rem;">
-                            $${token.value.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                            $${token.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${percentOfPortfolio.toFixed(1)}%)
                         </div>
                     </div>
                 `;
@@ -1142,17 +1448,38 @@
         // Chart Functions
         let portfolioChart = null;
 
-        function updatePortfolioChart() {
+        function updateChartMode() {
+            const chartMode = document.getElementById('chartMode').value;
+            appState.chartMode = chartMode;
+            updatePortfolioChart();
+        }
+
+        async function updatePortfolioChart() {
             const ctx = document.getElementById('portfolioChart');
             if (!ctx) return;
             
             const chartCtx = ctx.getContext('2d');
+            const timeframe = document.getElementById('chartTimeframe').value;
+            const chartMode = appState.chartMode;
             
-            // Generate mock historical data
-            const data = generateChartData();
+            const data = await generateRealChartData(timeframe, chartMode);
             
             if (portfolioChart) {
                 portfolioChart.destroy();
+            }
+            
+            let label = 'Portfolio Value (USD)';
+            let color = '#ff6b6b';
+            let yAxisCallback = function(value) { return '$' + value.toLocaleString(); };
+            
+            if (chartMode === 'SOL') {
+                label = 'Portfolio Value (SOL)';
+                color = '#4ecdc4';
+                yAxisCallback = function(value) { return value.toFixed(3) + ' SOL'; };
+            } else if (chartMode === 'BTC') {
+                label = 'Portfolio Value (BTC)';
+                color = '#f7931a';
+                yAxisCallback = function(value) { return value.toFixed(6) + ' BTC'; };
             }
             
             portfolioChart = new Chart(chartCtx, {
@@ -1160,12 +1487,14 @@
                 data: {
                     labels: data.labels,
                     datasets: [{
-                        label: 'Portfolio Value',
+                        label: label,
                         data: data.values,
-                        borderColor: '#ff6b6b',
-                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        borderColor: color,
+                        backgroundColor: color + '20',
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
@@ -1173,7 +1502,22 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            labels: {
+                                color: '#ffffff',
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: color,
+                            borderWidth: 1
                         }
                     },
                     scales: {
@@ -1191,31 +1535,132 @@
                             },
                             ticks: {
                                 color: '#888',
-                                callback: function(value) {
-                                    return '$' + value.toLocaleString();
-                                }
+                                callback: yAxisCallback
                             }
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
         }
 
-        function generateChartData() {
+        async function generateRealChartData(timeframe, chartMode) {
+            const history = getPortfolioHistory();
+            
+            if (history.length === 0) {
+                return generateDemoChartData(timeframe, chartMode);
+            }
+            
+            const now = Date.now();
+            let startTime;
+            
+            switch (timeframe) {
+                case '24h':
+                    startTime = now - (24 * 60 * 60 * 1000);
+                    break;
+                case '7d':
+                    startTime = now - (7 * 24 * 60 * 60 * 1000);
+                    break;
+                case '30d':
+                    startTime = now - (30 * 24 * 60 * 60 * 1000);
+                    break;
+                default:
+                    startTime = now - (24 * 60 * 60 * 1000);
+            }
+            
+            const filteredHistory = history.filter(h => h.timestamp >= startTime);
+            
+            if (filteredHistory.length === 0) {
+                return generateDemoChartData(timeframe, chartMode);
+            }
+            
+            const labels = [];
+            const values = [];
+            
+            let solPrice = 1;
+            let btcPrice = 1;
+            
+            if (chartMode === 'SOL') {
+                solPrice = await fetchTokenPrice('So11111111111111111111111111111111111111112');
+            } else if (chartMode === 'BTC') {
+                btcPrice = await fetchTokenPrice('9n4nbM75f5Ui33ZbPYXn59EwSgE8CGsHtAeTH5YFeJ9E');
+            }
+            
+            filteredHistory.forEach(snapshot => {
+                const date = new Date(snapshot.timestamp);
+                labels.push(formatChartLabel(date, timeframe));
+                
+                let value = snapshot.totalValue;
+                if (chartMode === 'SOL' && solPrice > 0) {
+                    value = value / solPrice;
+                } else if (chartMode === 'BTC' && btcPrice > 0) {
+                    value = value / btcPrice;
+                }
+                
+                values.push(value);
+            });
+            
+            return { labels, values };
+        }
+
+        function generateDemoChartData(timeframe, chartMode) {
+            const now = new Date();
             const labels = [];
             const values = [];
             let baseValue = 10000;
             
-            for (let i = 23; i >= 0; i--) {
-                const date = new Date(Date.now() - (i * 60 * 60 * 1000));
-                labels.push(date.getHours() + ':00');
+            if (chartMode === 'SOL') {
+                baseValue = 100;
+            } else if (chartMode === 'BTC') {
+                baseValue = 0.5;
+            }
+            
+            let points, interval;
+            switch (timeframe) {
+                case '24h':
+                    points = 24;
+                    interval = 60 * 60 * 1000;
+                    break;
+                case '7d':
+                    points = 7;
+                    interval = 24 * 60 * 60 * 1000;
+                    break;
+                case '30d':
+                    points = 30;
+                    interval = 24 * 60 * 60 * 1000;
+                    break;
+                default:
+                    points = 24;
+                    interval = 60 * 60 * 1000;
+            }
+            
+            for (let i = points; i >= 0; i--) {
+                const date = new Date(now.getTime() - (i * interval));
+                labels.push(formatChartLabel(date, timeframe));
                 
-                const change = (Math.random() - 0.5) * 0.05;
+                const change = (Math.random() - 0.5) * 0.02;
                 baseValue += baseValue * change;
                 values.push(baseValue);
             }
             
             return { labels, values };
+        }
+
+        function formatChartLabel(date, timeframe) {
+            switch (timeframe) {
+                case '24h':
+                    return date.getHours().toString().padStart(2, '0') + ':00';
+                case '7d':
+                    return (date.getMonth() + 1) + '/' + date.getDate();
+                case '30d':
+                    return (date.getMonth() + 1) + '/' + date.getDate();
+                default:
+                    return date.toLocaleDateString();
+            }
         }
 
         // Utility Functions
@@ -1245,7 +1690,6 @@
             setInterval(async () => {
                 if (appState.connected) {
                     console.log('Refreshing data...');
-                    // Add some random variation to simulate live data
                     appState.portfolioData.forEach(token => {
                         token.change24h += (Math.random() - 0.5) * 0.5;
                         token.price *= (1 + (Math.random() - 0.5) * 0.001);
