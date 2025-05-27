@@ -8,41 +8,33 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.min.js"></script>
     <style>
         :root {
             --bg-primary: #0A0A0F;
             --bg-secondary: #121218;
             --bg-tertiary: #1A1A23;
             --bg-card: #1E1E2A;
-            --bg-glass: rgba(30, 30, 42, 0.7);
-            --bg-hover: rgba(99, 102, 241, 0.08);
+            --bg-glass: rgba(30, 30, 42, 0.8);
+            --bg-hover: rgba(99, 102, 241, 0.1);
             
             --accent-primary: #6366F1;
             --accent-secondary: #8B5CF6;
             --accent-tertiary: #06B6D4;
             --accent-pink: #EC4899;
-            --accent-emerald: #10B981;
             
             --text-primary: #F8FAFC;
             --text-secondary: #CBD5E1;
             --text-muted: #64748B;
-            --text-accent: #A855F7;
             
-            --border-primary: rgba(139, 92, 246, 0.2);
-            --border-secondary: rgba(99, 102, 241, 0.15);
             --border-subtle: rgba(248, 250, 252, 0.1);
+            --border-primary: rgba(139, 92, 246, 0.3);
             
             --success: #10B981;
             --warning: #F59E0B;
             --error: #EF4444;
             
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.3);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
         * {
@@ -56,9 +48,44 @@
             background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
             color: var(--text-primary);
             min-height: 100vh;
-            overflow-x: hidden;
-            font-weight: 400;
             line-height: 1.6;
+        }
+
+        .bg-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: var(--accent-primary);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+            opacity: 0.4;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.4; }
+            90% { opacity: 0.4; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .container {
@@ -75,11 +102,11 @@
             align-items: center;
             padding: 24px 0;
             border-bottom: 1px solid var(--border-subtle);
-            backdrop-filter: blur(20px);
             position: sticky;
             top: 0;
-            z-index: 100;
+            backdrop-filter: blur(20px);
             background: rgba(10, 10, 15, 0.9);
+            z-index: 100;
         }
 
         .logo {
@@ -88,8 +115,12 @@
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo:hover {
+            transform: scale(1.05);
         }
 
         .wallet-btn {
@@ -101,37 +132,34 @@
             font-weight: 500;
             font-size: 14px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             box-shadow: var(--shadow-md);
             position: relative;
-            overflow: hidden;
-        }
-
-        .wallet-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .wallet-btn:hover::before {
-            opacity: 1;
         }
 
         .wallet-btn:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
+            box-shadow: var(--shadow-lg);
         }
 
         .wallet-btn.connected {
             background: var(--bg-card);
             border: 1px solid var(--border-primary);
             color: var(--accent-secondary);
+        }
+
+        .wallet-btn.loading::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 16px;
+            height: 16px;
+            margin: -8px 0 0 -8px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
         /* Navigation */
@@ -143,31 +171,27 @@
             padding: 6px;
             margin: 24px 0;
             backdrop-filter: blur(20px);
-            box-shadow: var(--shadow-sm);
         }
 
         .nav-tab {
             flex: 1;
             text-align: center;
-            padding: 14px 12px;
-            border-radius: 16px;
+            padding: 12px;
+            border-radius: 14px;
             cursor: pointer;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             font-weight: 500;
             font-size: 14px;
             color: var(--text-muted);
-            position: relative;
-            overflow: hidden;
         }
 
         .nav-tab.active {
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             color: var(--text-primary);
             box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
         }
 
-        .nav-tab:not(.active):hover {
+        .nav-tab:hover:not(.active) {
             color: var(--text-secondary);
             background: var(--bg-hover);
         }
@@ -175,89 +199,26 @@
         /* Content Sections */
         .content-section {
             display: none;
-            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            padding-bottom: 100px;
+            animation: slideIn 0.4s ease;
+            padding-bottom: 120px;
         }
 
         .content-section.active {
             display: block;
         }
 
-        @keyframes slideIn {
-            from { 
-                opacity: 0; 
-                transform: translateY(20px);
-            }
-            to { 
-                opacity: 1; 
-                transform: translateY(0);
-            }
-        }
-
-        /* Cards */
-        .card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 24px;
-            backdrop-filter: blur(20px);
-            box-shadow: var(--shadow-md);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--accent-primary), transparent);
-            opacity: 0.5;
-        }
-
-        .card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
-            border-color: var(--border-primary);
-        }
-
-        /* Portfolio Section */
+        /* Portfolio Header */
         .portfolio-header {
             background: linear-gradient(135deg, 
-                rgba(139, 92, 246, 0.1) 0%, 
-                rgba(99, 102, 241, 0.1) 50%, 
-                rgba(6, 182, 212, 0.1) 100%);
+                rgba(139, 92, 246, 0.15) 0%, 
+                rgba(99, 102, 241, 0.15) 50%, 
+                rgba(6, 182, 212, 0.15) 100%);
             border: 1px solid var(--border-primary);
-            border-radius: 28px;
-            padding: 32px 28px;
+            border-radius: 24px;
+            padding: 32px 24px;
             margin: 24px 0;
             text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .portfolio-header::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: conic-gradient(from 0deg, transparent, var(--accent-secondary), transparent);
-            animation: rotate 8s linear infinite;
-            opacity: 0.1;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        .portfolio-header > * {
-            position: relative;
-            z-index: 1;
+            backdrop-filter: blur(20px);
         }
 
         .portfolio-value {
@@ -267,8 +228,6 @@
             background: linear-gradient(135deg, var(--text-primary), var(--accent-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -1px;
         }
 
         .portfolio-change {
@@ -280,14 +239,10 @@
             gap: 12px;
         }
 
-        .portfolio-change.positive {
-            color: var(--success);
-        }
+        .portfolio-change.positive { color: var(--success); }
+        .portfolio-change.negative { color: var(--error); }
 
-        .portfolio-change.negative {
-            color: var(--error);
-        }
-
+        /* Chart */
         .chart-container {
             background: var(--bg-glass);
             border: 1px solid var(--border-subtle);
@@ -295,7 +250,6 @@
             padding: 24px;
             margin: 24px 0;
             height: 320px;
-            position: relative;
             backdrop-filter: blur(20px);
         }
 
@@ -307,16 +261,15 @@
         }
 
         .chart-btn {
-            padding: 10px 20px;
+            padding: 8px 16px;
             border-radius: 12px;
             border: 1px solid var(--border-subtle);
             background: transparent;
             color: var(--text-muted);
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
             font-size: 13px;
             font-weight: 500;
-            font-family: 'Roboto', sans-serif;
         }
 
         .chart-btn:hover {
@@ -328,35 +281,43 @@
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             border-color: var(--accent-primary);
             color: var(--text-primary);
-            box-shadow: var(--shadow-md);
         }
 
-        /* Token List */
-        .token-list {
-            margin: 24px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .token-item {
+        /* Cards */
+        .card {
             background: var(--bg-glass);
             border: 1px solid var(--border-subtle);
             border-radius: 20px;
+            backdrop-filter: blur(20px);
+            transition: all 0.3s ease;
+            margin-bottom: 16px;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--border-primary);
+        }
+
+        /* Token List */
+        .token-item {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
             padding: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             backdrop-filter: blur(20px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+            cursor: pointer;
         }
 
         .token-item:hover {
             background: var(--bg-hover);
             border-color: var(--border-primary);
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
         }
 
         .token-info {
@@ -368,7 +329,7 @@
         .token-icon {
             width: 48px;
             height: 48px;
-            border-radius: 16px;
+            border-radius: 12px;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             display: flex;
             align-items: center;
@@ -376,11 +337,10 @@
             font-weight: 600;
             font-size: 16px;
             color: var(--text-primary);
-            box-shadow: var(--shadow-md);
         }
 
         .token-details h3 {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 500;
             margin-bottom: 4px;
             color: var(--text-primary);
@@ -389,7 +349,6 @@
         .token-details p {
             font-size: 13px;
             color: var(--text-muted);
-            font-weight: 400;
         }
 
         .token-stats {
@@ -397,7 +356,7 @@
         }
 
         .token-price {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 600;
             margin-bottom: 4px;
             color: var(--text-primary);
@@ -407,7 +366,7 @@
             font-size: 13px;
             font-weight: 500;
             padding: 4px 8px;
-            border-radius: 8px;
+            border-radius: 6px;
         }
 
         .token-change.positive {
@@ -422,128 +381,21 @@
 
         /* Section Titles */
         .section-title {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
             margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
             color: var(--text-primary);
-            letter-spacing: -0.3px;
-        }
-
-        /* Social Section */
-        .top-traders {
-            margin: 24px 0;
-        }
-
-        .trader-card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 24px;
-            margin-bottom: 16px;
-            backdrop-filter: blur(20px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .trader-card:hover {
-            border-color: var(--border-primary);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        .trader-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 16px;
-        }
-
-        .trader-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .trader-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 16px;
-            background: linear-gradient(135deg, var(--accent-pink), var(--warning));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 16px;
-            color: var(--text-primary);
-            box-shadow: var(--shadow-md);
-        }
-
-        .trader-info div h3 {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: var(--text-primary);
-        }
-
-        .trader-info div p {
-            font-size: 13px;
-            color: var(--text-muted);
-            font-family: 'Roboto Mono', monospace;
-        }
-
-        .follow-btn {
-            background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-primary));
-            border: none;
-            color: var(--text-primary);
-            padding: 10px 20px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .follow-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .trader-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 16px;
-            font-size: 13px;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 12px;
-            background: rgba(30, 30, 42, 0.5);
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-        }
-
-        .stat-value {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--success);
-            margin-bottom: 4px;
-        }
-
-        .stat-item div:last-child {
-            color: var(--text-muted);
-            font-size: 12px;
         }
 
         /* Forms */
         .form-container {
             background: var(--bg-glass);
             border: 1px solid var(--border-subtle);
-            border-radius: 24px;
-            padding: 28px;
+            border-radius: 20px;
+            padding: 24px;
             margin: 24px 0;
             backdrop-filter: blur(20px);
         }
@@ -562,14 +414,13 @@
 
         .form-input, .form-select {
             width: 100%;
-            padding: 16px 20px;
-            border-radius: 16px;
+            padding: 14px 16px;
+            border-radius: 12px;
             border: 1px solid var(--border-subtle);
             background: var(--bg-card);
             color: var(--text-primary);
-            font-size: 15px;
-            font-family: 'Roboto', sans-serif;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-size: 14px;
+            transition: all 0.3s ease;
         }
 
         .form-input:focus, .form-select:focus {
@@ -586,300 +437,167 @@
             width: 100%;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             border: none;
-            padding: 16px;
-            border-radius: 16px;
+            padding: 14px;
+            border-radius: 12px;
             color: var(--text-primary);
             font-weight: 500;
             font-size: 16px;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: var(--shadow-md);
-            font-family: 'Roboto', sans-serif;
+            transition: all 0.3s ease;
         }
 
         .submit-btn:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg), var(--shadow-glow);
-        }
-
-        /* Alert Items */
-        .alert-item, .whale-item {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 12px;
-            backdrop-filter: blur(20px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .alert-item:hover, .whale-item:hover {
-            border-color: var(--border-primary);
-            transform: translateY(-1px);
-        }
-
-        .alert-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .alert-details h4 {
-            font-size: 15px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: var(--text-primary);
-        }
-
-        .alert-details p {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .delete-alert {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--error);
-            color: var(--error);
-            padding: 8px 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .delete-alert:hover {
-            background: rgba(239, 68, 68, 0.2);
-        }
-
-        /* Whale Activity */
-        .whale-item {
-            border-left: 4px solid var(--warning);
-        }
-
-        .whale-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .whale-amount {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--warning);
-        }
-
-        .whale-time {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .whale-details {
-            font-size: 14px;
-            line-height: 1.5;
-            color: var(--text-secondary);
-        }
-
-        /* Achievements */
-        .achievements-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            margin: 24px 0;
-        }
-
-        .achievement-card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 20px;
-            text-align: center;
-            backdrop-filter: blur(20px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .achievement-card.unlocked {
-            background: linear-gradient(135deg, 
-                rgba(16, 185, 129, 0.1), 
-                rgba(139, 92, 246, 0.1));
-            border-color: var(--success);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
-        }
-
-        .achievement-card:hover {
-            transform: translateY(-4px);
             box-shadow: var(--shadow-lg);
         }
 
-        .achievement-icon {
-            font-size: 36px;
-            margin-bottom: 12px;
-            opacity: 0.4;
-            transition: all 0.3s ease;
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
-        .achievement-card.unlocked .achievement-icon {
-            opacity: 1;
-            transform: scale(1.1);
-        }
-
-        .achievement-title {
-            font-size: 13px;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: var(--text-primary);
-        }
-
-        .achievement-desc {
-            font-size: 11px;
-            color: var(--text-muted);
-            line-height: 1.4;
-        }
-
-        /* Risk Dashboard */
-        .risk-dashboard {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 24px;
-            padding: 28px;
-            margin: 24px 0;
-            backdrop-filter: blur(20px);
-        }
-
-        .risk-score {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 24px;
-        }
-
-        .risk-score div h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--text-primary);
-        }
-
-        .risk-score div p {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .risk-meter {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: 700;
-            border: 3px solid;
-            position: relative;
-            background: var(--bg-card);
-        }
-
-        .risk-meter.low {
-            border-color: var(--success);
-            color: var(--success);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-        }
-
-        .risk-meter.medium {
-            border-color: var(--warning);
-            color: var(--warning);
-            box-shadow: 0 0 20px rgba(245, 158, 11, 0.3);
-        }
-
-        .risk-meter.high {
-            border-color: var(--error);
-            color: var(--error);
-            box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
-        }
-
-        .warning-item {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid var(--warning);
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        /* Sentiment */
-        .sentiment-post {
+        /* Trader Cards */
+        .trader-card {
             background: var(--bg-glass);
             border: 1px solid var(--border-subtle);
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 16px;
             backdrop-filter: blur(20px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.3s ease;
         }
 
-        .sentiment-post:hover {
+        .trader-card:hover {
             border-color: var(--border-primary);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
-        .sentiment-header {
+        .trader-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 16px;
         }
 
-        .sentiment-badge {
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 11px;
+        .trader-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .trader-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-pink), var(--warning));
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 14px;
+            color: var(--text-primary);
         }
 
-        .sentiment-badge.bullish {
-            background: rgba(16, 185, 129, 0.2);
-            color: var(--success);
+        .trader-info div h3 {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .trader-info div p {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .follow-btn {
+            background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-primary));
+            border: none;
+            color: var(--text-primary);
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .follow-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .follow-btn.following {
+            background: var(--bg-card);
             border: 1px solid var(--success);
+            color: var(--success);
         }
 
-        .sentiment-badge.bearish {
-            background: rgba(239, 68, 68, 0.2);
-            color: var(--error);
-            border: 1px solid var(--error);
+        .trader-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
         }
 
-        .sentiment-badge.neutral {
-            background: rgba(139, 92, 246, 0.2);
-            color: var(--accent-secondary);
-            border: 1px solid var(--accent-secondary);
+        .stat-item {
+            text-align: center;
+            padding: 12px;
+            background: rgba(30, 30, 42, 0.5);
+            border-radius: 8px;
+            border: 1px solid var(--border-subtle);
         }
 
-        /* Loading States */
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--success);
+            margin-bottom: 4px;
+        }
+
+        .stat-item div:last-child {
+            color: var(--text-muted);
+            font-size: 11px;
+        }
+
+        /* Loading */
         .loading {
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 60px;
+            padding: 40px;
         }
 
         .spinner {
-            width: 48px;
-            height: 48px;
+            width: 40px;
+            height: 40px;
             border: 3px solid var(--border-subtle);
             border-top: 3px solid var(--accent-primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state p {
+            font-size: 14px;
         }
 
         /* Bottom Navigation */
@@ -907,11 +625,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             cursor: pointer;
-            padding: 12px 8px;
-            border-radius: 16px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            padding: 8px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
             color: var(--text-muted);
             min-width: 60px;
         }
@@ -919,7 +637,6 @@
         .nav-item.active {
             color: var(--accent-primary);
             background: rgba(99, 102, 241, 0.1);
-            transform: translateY(-2px);
         }
 
         .nav-item:hover:not(.active) {
@@ -928,38 +645,31 @@
         }
 
         .nav-icon {
-            font-size: 22px;
-            transition: transform 0.3s ease;
-        }
-
-        .nav-item.active .nav-icon {
-            transform: scale(1.1);
+            font-size: 20px;
         }
 
         .nav-label {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 500;
-            letter-spacing: 0.3px;
         }
 
         /* Notifications */
         .notification {
             position: fixed;
-            top: 24px;
-            right: 24px;
+            top: 20px;
+            right: 20px;
             background: var(--bg-glass);
             border: 1px solid var(--border-primary);
             color: var(--text-primary);
-            padding: 16px 24px;
-            border-radius: 16px;
+            padding: 16px 20px;
+            border-radius: 12px;
             font-size: 14px;
             font-weight: 500;
             z-index: 1001;
             transform: translateX(100%);
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.4s ease;
             backdrop-filter: blur(20px);
-            box-shadow: var(--shadow-lg);
-            max-width: 320px;
+            max-width: 300px;
         }
 
         .notification.show {
@@ -968,26 +678,20 @@
 
         .notification.success {
             border-color: var(--success);
-            background: linear-gradient(135deg, 
-                rgba(16, 185, 129, 0.1), 
-                var(--bg-glass));
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--bg-glass));
         }
 
         .notification.error {
             border-color: var(--error);
-            background: linear-gradient(135deg, 
-                rgba(239, 68, 68, 0.1), 
-                var(--bg-glass));
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--bg-glass));
         }
 
         .notification.info {
             border-color: var(--accent-tertiary);
-            background: linear-gradient(135deg, 
-                rgba(6, 182, 212, 0.1), 
-                var(--bg-glass));
+            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), var(--bg-glass));
         }
 
-        /* Responsive Design */
+        /* Responsive */
         @media (max-width: 480px) {
             .container {
                 padding: 0 16px;
@@ -996,98 +700,31 @@
             .portfolio-value {
                 font-size: 32px;
             }
-            
-            .achievements-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 12px;
+
+            .notification {
+                right: 16px;
+                left: 16px;
+                max-width: none;
             }
-
-            .form-container {
-                padding: 24px;
-            }
-
-            .trader-card {
-                padding: 20px;
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(30, 30, 42, 0.3);
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-radius: 3px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: linear-gradient(135deg, var(--accent-secondary), var(--accent-primary));
-        }
-
-        /* Micro-interactions */
-        .card, .token-item, .trader-card, .achievement-card {
-            will-change: transform;
-        }
-
-        .submit-btn, .wallet-btn, .follow-btn {
-            will-change: transform, box-shadow;
-        }
-
-        /* Additional refinements */
-        .copy-trade-section {
-            margin: 32px 0;
-        }
-
-        .sentiment-forum {
-            margin: 32px 0;
-        }
-
-        .active-alerts {
-            margin: 32px 0;
-        }
-
-        .whale-activity {
-            margin: 32px 0;
-        }
-
-        /* Enhanced glassmorphism */
-        .glass-effect {
-            background: rgba(30, 30, 42, 0.4);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(248, 250, 252, 0.1);
-        }
-
-        /* Gradient text effects */
-        .gradient-text {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .gradient-text-alt {
-            background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
     </style>
 </head>
 <body>
+    <div class="bg-particles" id="bgParticles"></div>
+
     <div class="container">
-        <!-- Header -->
         <header class="header">
-            <div class="logo">Cypher</div>
+            <div class="logo" onclick="refreshApp()">Cypher</div>
             <button class="wallet-btn" id="walletBtn">Connect Wallet</button>
         </header>
 
-        <!-- Main Content -->
+        <div class="nav-tabs">
+            <div class="nav-tab active" data-section="portfolio">Portfolio</div>
+            <div class="nav-tab" data-section="social">Social</div>
+            <div class="nav-tab" data-section="alerts">Alerts</div>
+            <div class="nav-tab" data-section="analytics">Analytics</div>
+        </div>
+
         <main>
             <!-- Portfolio Section -->
             <section class="content-section active" id="portfolio">
@@ -1099,7 +736,7 @@
                     </div>
                 </div>
 
-                <div class="chart-container card">
+                <div class="chart-container">
                     <div class="chart-controls">
                         <button class="chart-btn active" data-period="1D">1D</button>
                         <button class="chart-btn" data-period="1W">1W</button>
@@ -1109,7 +746,7 @@
                     <canvas id="portfolioChart"></canvas>
                 </div>
 
-                <div class="token-list" id="tokenList">
+                <div id="tokenList">
                     <div class="loading">
                         <div class="spinner"></div>
                     </div>
@@ -1118,60 +755,39 @@
 
             <!-- Social Section -->
             <section class="content-section" id="social">
-                <div class="top-traders">
-                    <h2 class="section-title">🏆 Top Performers</h2>
-                    <div id="topTradersList">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
+                <h2 class="section-title">🏆 Top Performers</h2>
+                <div id="topTradersList">
+                    <div class="loading">
+                        <div class="spinner"></div>
                     </div>
                 </div>
 
-                <div class="copy-trade-section">
-                    <h2 class="section-title">📋 Copy Trading</h2>
-                    <div class="form-container">
-                        <div class="form-group">
-                            <label class="form-label">Target Trader Wallet</label>
-                            <input type="text" class="form-input" id="targetTrader" placeholder="Enter wallet address">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Allocation Amount (SOL)</label>
-                            <input type="number" class="form-input" id="allocationAmount" placeholder="0.1 - 5.0" min="0.1" max="5.0" step="0.1">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Max Slippage (%)</label>
-                            <input type="number" class="form-input" id="maxSlippage" placeholder="1-10" min="1" max="10" value="5">
-                        </div>
-                        <button class="submit-btn" onclick="createCopyTrade()">Start Copy Trading</button>
+                <h2 class="section-title">📋 Copy Trading</h2>
+                <div class="form-container">
+                    <div class="form-group">
+                        <label class="form-label">Target Trader Wallet</label>
+                        <input type="text" class="form-input" id="targetTrader" placeholder="Enter wallet address">
                     </div>
-                </div>
-
-                <div class="sentiment-forum">
-                    <h2 class="section-title">💭 Sentiment Forum</h2>
-                    <div id="sentimentPosts">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
+                    <div class="form-group">
+                        <label class="form-label">Allocation Amount (SOL)</label>
+                        <input type="number" class="form-input" id="allocationAmount" placeholder="0.1 - 5.0" min="0.1" max="5.0" step="0.1">
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Slippage (%)</label>
+                        <input type="number" class="form-input" id="maxSlippage" placeholder="1-10" min="1" max="10" value="5">
+                    </div>
+                    <button class="submit-btn" id="copyTradeBtn">Start Copy Trading</button>
                 </div>
             </section>
 
             <!-- Alerts Section -->
             <section class="content-section" id="alerts">
+                <h2 class="section-title">🔔 Create Alert</h2>
                 <div class="form-container">
-                    <h2 class="section-title">🔔 Create Price Alert</h2>
                     <div class="form-group">
                         <label class="form-label">Token</label>
                         <select class="form-select" id="alertToken">
                             <option value="">Select token</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">Alert Type</label>
-                        <select class="form-select" id="alertType">
-                            <option value="price">Price Alert</option>
-                            <option value="volume">Volume Alert</option>
-                            <option value="whale">Whale Alert</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -1185,59 +801,27 @@
                             <option value="below">Below target</option>
                         </select>
                     </div>
-                    <button class="submit-btn" onclick="createAlert()">Create Alert</button>
+                    <button class="submit-btn" id="createAlertBtn">Create Alert</button>
                 </div>
 
-                <div class="active-alerts">
-                    <h2 class="section-title">📋 Active Alerts</h2>
-                    <div id="activeAlertsList">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="whale-activity">
-                    <h2 class="section-title">🐋 Whale Activity</h2>
-                    <div id="whaleActivityList">
-                        <div class="loading">
-                            <div class="spinner"></div>
-                        </div>
+                <h2 class="section-title">📋 Active Alerts</h2>
+                <div id="alertsList">
+                    <div class="loading">
+                        <div class="spinner"></div>
                     </div>
                 </div>
             </section>
 
             <!-- Analytics Section -->
             <section class="content-section" id="analytics">
-                <div class="risk-dashboard">
-                    <h2 class="section-title">⚠️ Risk Monitoring</h2>
-                    <div class="risk-score">
-                        <div>
-                            <h3>Risk Score</h3>
-                            <p>Portfolio concentration and volatility analysis</p>
-                        </div>
-                        <div class="risk-meter medium" id="riskMeter">50</div>
-                    </div>
-                    <div class="risk-warnings" id="riskWarnings">
-                        <!-- Risk warnings will be populated here -->
-                    </div>
-                </div>
-
-                <div class="achievements-grid" id="achievementsList">
-                    <!-- Achievements will be populated here -->
+                <h2 class="section-title">📊 Analytics</h2>
+                <div class="card" style="padding: 24px; text-align: center;">
+                    <h3 style="margin-bottom: 16px;">Coming Soon</h3>
+                    <p style="color: var(--text-muted);">Advanced analytics and risk monitoring features will be available soon.</p>
                 </div>
             </section>
         </main>
 
-        <!-- Navigation Tabs (for mobile) -->
-        <div class="nav-tabs">
-            <div class="nav-tab active" data-section="portfolio">Portfolio</div>
-            <div class="nav-tab" data-section="social">Social</div>
-            <div class="nav-tab" data-section="alerts">Alerts</div>
-            <div class="nav-tab" data-section="analytics">Analytics</div>
-        </div>
-
-        <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <div class="nav-items">
                 <div class="nav-item active" data-section="portfolio">
@@ -1260,61 +844,45 @@
         </nav>
     </div>
 
-    <!-- Notification Container -->
     <div class="notification" id="notification"></div>
 
     <script>
-        // Global variables
+        // Global State
         let walletConnected = false;
         let walletAddress = null;
         let portfolioChart = null;
         let userTokens = [];
-        let portfolioData = {
-            totalValue: 0,
-            change24h: 0,
-            changePercent: 0
-        };
+        let followedTraders = new Set();
+        let activeAlerts = [];
+        let portfolioData = { totalValue: 0, change24h: 0, changePercent: 0 };
 
-        // API Configuration with fallbacks
-        const API_CONFIG = {
-            jupiter: 'https://api.jup.ag/price/v2',
-            coingecko: 'https://api.coingecko.com/api/v3',
-            solana: 'https://api.devnet.solana.com',
-            helius: 'https://api.helius.xyz/v0'
-        };
+        // API URLs
+        const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 
-        // Program Configuration
-        const PROGRAM_CONFIG = {
-            programId: 'GA4YrKc2ZFEvABcfLd93gMMfNH5nMwWRSNtQMgpF8iHy',
-            network: 'devnet'
-        };
-
-        // Initialize Application
+        // Initialize App
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initializing Cypher dApp...');
             initializeApp();
             setupEventListeners();
-            checkWalletConnection();
+            createBackgroundParticles();
         });
 
-        async function initializeApp() {
-            console.log('Initializing Cypher dApp...');
-            await loadTokenData();
-            await loadTopTraders();
-            await loadWhaleActivity();
-            await loadSentimentData();
-            await loadAchievements();
+        function initializeApp() {
+            loadPortfolioData();
+            loadTopTraders();
+            loadTokenOptions();
             setupChart();
+            loadActiveAlerts();
         }
 
         function setupEventListeners() {
-            // Wallet connection
-            document.getElementById('walletBtn').addEventListener('click', connectWallet);
+            // Wallet button
+            document.getElementById('walletBtn').addEventListener('click', handleWalletClick);
 
-            // Navigation (both tab and bottom nav)
+            // Navigation
             document.querySelectorAll('.nav-item, .nav-tab').forEach(item => {
                 item.addEventListener('click', function() {
-                    const section = this.dataset.section;
-                    switchSection(section);
+                    switchSection(this.dataset.section);
                 });
             });
 
@@ -1326,782 +894,25 @@
                     updateChart(this.dataset.period);
                 });
             });
+
+            // Form buttons
+            document.getElementById('copyTradeBtn').addEventListener('click', handleCopyTrade);
+            document.getElementById('createAlertBtn').addEventListener('click', handleCreateAlert);
         }
 
-        // Wallet Connection Functions
-        async function connectWallet() {
-            try {
-                if (typeof window.solana === 'undefined') {
-                    showNotification('Please install Phantom wallet or another Solana wallet', 'error');
-                    return;
-                }
-
-                const wallet = window.solana;
-                if (!wallet.isPhantom && !wallet.isSolflare) {
-                    showNotification('Unsupported wallet. Please use Phantom or Solflare', 'error');
-                    return;
-                }
-
-                const response = await wallet.connect();
-                walletAddress = response.publicKey.toString();
-                walletConnected = true;
-
-                document.getElementById('walletBtn').textContent = 
-                    walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
-                document.getElementById('walletBtn').classList.add('connected');
-
-                showNotification('Wallet connected successfully!', 'success');
-                
-                // Initialize user account and load portfolio
-                await initializeUser();
-                await loadPortfolioData();
-
-            } catch (error) {
-                console.error('Wallet connection failed:', error);
-                showNotification('Failed to connect wallet', 'error');
-            }
-        }
-
-        async function checkWalletConnection() {
-            if (typeof window.solana !== 'undefined' && window.solana.isConnected) {
-                try {
-                    const wallet = window.solana;
-                    walletAddress = wallet.publicKey.toString();
-                    walletConnected = true;
-                    
-                    document.getElementById('walletBtn').textContent = 
-                        walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
-                    document.getElementById('walletBtn').classList.add('connected');
-                    
-                    await loadPortfolioData();
-                } catch (error) {
-                    console.error('Auto-connect failed:', error);
-                }
-            }
-        }
-
-        // Portfolio Functions
-        async function loadPortfolioData() {
-            if (!walletConnected) return;
-
-            try {
-                showNotification('Loading portfolio data...', 'info');
-                
-                // Get wallet tokens using Jupiter API
-                const response = await fetch(`${API_CONFIG.jupiter}?ids=${walletAddress}`);
-                if (!response.ok) throw new Error('Failed to fetch from Jupiter API');
-                
-                const tokenData = await response.json();
-                
-                // Fallback to CoinGecko if Jupiter fails
-                if (!tokenData || Object.keys(tokenData).length === 0) {
-                    await loadPortfolioFromCoinGecko();
-                    return;
-                }
-
-                await processPortfolioData(tokenData);
-                updatePortfolioDisplay();
-                
-            } catch (error) {
-                console.error('Portfolio loading failed:', error);
-                await loadPortfolioFromCoinGecko();
-            }
-        }
-
-        async function loadPortfolioFromCoinGecko() {
-            try {
-                // Get popular Solana tokens as fallback
-                const response = await fetch(`${API_CONFIG.coingecko}/coins/markets?vs_currency=usd&category=solana-ecosystem&order=market_cap_desc&per_page=20&page=1`);
-                const tokens = await response.json();
-                
-                // Simulate portfolio with sample data for demo
-                userTokens = tokens.slice(0, 8).map(token => ({
-                    symbol: token.symbol.toUpperCase(),
-                    name: token.name,
-                    price: token.current_price,
-                    change24h: token.price_change_percentage_24h,
-                    balance: Math.random() * 1000 + 10,
-                    value: token.current_price * (Math.random() * 1000 + 10),
-                    icon: token.image
-                }));
-
-                portfolioData.totalValue = userTokens.reduce((sum, token) => sum + token.value, 0);
-                portfolioData.change24h = portfolioData.totalValue * 0.1 * (Math.random() - 0.5);
-                portfolioData.changePercent = (portfolioData.change24h / portfolioData.totalValue) * 100;
-
-                updatePortfolioDisplay();
-                
-            } catch (error) {
-                console.error('CoinGecko fallback failed:', error);
-                showNotification('Failed to load portfolio data', 'error');
-            }
-        }
-
-        async function processPortfolioData(tokenData) {
-            userTokens = [];
-            let totalValue = 0;
-
-            for (const [address, data] of Object.entries(tokenData)) {
-                if (data.price) {
-                    const token = {
-                        address: address,
-                        symbol: data.symbol || 'UNKNOWN',
-                        name: data.name || 'Unknown Token',
-                        price: data.price,
-                        change24h: data.price_change_percentage_24h || 0,
-                        balance: Math.random() * 100 + 1,
-                        value: data.price * (Math.random() * 100 + 1),
-                        icon: `https://ui-avatars.com/api/?name=${data.symbol}&background=random`
-                    };
-                    userTokens.push(token);
-                    totalValue += token.value;
-                }
-            }
-
-            portfolioData.totalValue = totalValue;
-            portfolioData.change24h = totalValue * 0.05 * (Math.random() - 0.5);
-            portfolioData.changePercent = (portfolioData.change24h / totalValue) * 100;
-        }
-
-        function updatePortfolioDisplay() {
-            // Update portfolio header
-            document.getElementById('portfolioValue').textContent = 
-                `${portfolioData.totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        // Background Particles
+        function createBackgroundParticles() {
+            const container = document.getElementById('bgParticles');
             
-            const changeElement = document.getElementById('portfolioChange');
-            const changeSign = portfolioData.change24h >= 0 ? '+' : '';
-            const changeClass = portfolioData.change24h >= 0 ? 'positive' : 'negative';
-            
-            changeElement.innerHTML = `
-                <span>${changeSign}${portfolioData.change24h.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (${changeSign}${portfolioData.changePercent.toFixed(2)}%)</span>
-                <span>24h</span>
-            `;
-            changeElement.className = `portfolio-change ${changeClass}`;
+            function createParticle() {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                container.appendChild(particle);
 
-            // Update token list
-            updateTokenList();
-        }
-
-        function updateTokenList() {
-            const tokenList = document.getElementById('tokenList');
-            
-            if (userTokens.length === 0) {
-                tokenList.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
-                return;
-            }
-
-            tokenList.innerHTML = userTokens.map(token => `
-                <div class="token-item">
-                    <div class="token-info">
-                        <div class="token-icon">
-                            ${token.symbol.charAt(0)}
-                        </div>
-                        <div class="token-details">
-                            <h3>${token.symbol}</h3>
-                            <p>${token.balance.toFixed(4)} tokens</p>
-                        </div>
-                    </div>
-                    <div class="token-stats">
-                        <div class="token-price">${token.price.toFixed(4)}</div>
-                        <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
-                            ${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // Chart Functions
-        function setupChart() {
-            const ctx = document.getElementById('portfolioChart').getContext('2d');
-            
-            // Generate sample data for demonstration
-            const chartData = generateChartData('1D');
-            
-            portfolioChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: [{
-                        label: 'Portfolio Value',
-                        data: chartData.values,
-                        borderColor: '#6366F1',
-                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 8,
-                        pointBackgroundColor: '#6366F1',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            grid: {
-                                color: 'rgba(248, 250, 252, 0.1)',
-                                borderColor: 'rgba(248, 250, 252, 0.1)'
-                            },
-                            ticks: {
-                                color: '#64748B',
-                                font: {
-                                    family: 'Roboto',
-                                    size: 11,
-                                    weight: '400'
-                                }
-                            }
-                        },
-                        y: {
-                            display: true,
-                            grid: {
-                                color: 'rgba(248, 250, 252, 0.1)',
-                                borderColor: 'rgba(248, 250, 252, 0.1)'
-                            },
-                            ticks: {
-                                color: '#64748B',
-                                font: {
-                                    family: 'Roboto',
-                                    size: 11,
-                                    weight: '400'
-                                },
-                                callback: function(value) {
-                                    return ' + value.toLocaleString();
-                                }
-                            }
-                        }
-                    },
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
                     }
-                }
-            });
-        }
-
-        function generateChartData(period) {
-            const periods = {
-                '1D': { points: 24, interval: 'hour' },
-                '1W': { points: 7, interval: 'day' },
-                '1M': { points: 30, interval: 'day' },
-                '1Y': { points: 12, interval: 'month' }
-            };
-
-            const config = periods[period];
-            const labels = [];
-            const values = [];
-            const baseValue = portfolioData.totalValue || 10000;
-
-            for (let i = config.points - 1; i >= 0; i--) {
-                const date = new Date();
-                if (config.interval === 'hour') {
-                    date.setHours(date.getHours() - i);
-                    labels.push(date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }));
-                } else if (config.interval === 'day') {
-                    date.setDate(date.getDate() - i);
-                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-                } else {
-                    date.setMonth(date.getMonth() - i);
-                    labels.push(date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }));
-                }
-
-                // Generate realistic price movement
-                const volatility = 0.02;
-                const trend = 0.001;
-                const randomChange = (Math.random() - 0.5) * volatility;
-                const value = baseValue * (1 + trend * i + randomChange);
-                values.push(Math.round(value));
-            }
-
-            return { labels, values };
-        }
-
-        function updateChart(period) {
-            const chartData = generateChartData(period);
-            portfolioChart.data.labels = chartData.labels;
-            portfolioChart.data.datasets[0].data = chartData.values;
-            portfolioChart.update('none');
-        }
-
-        // Social Features
-        async function loadTopTraders() {
-            try {
-                const traders = [
-                    {
-                        address: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRaJFD5Z1n',
-                        username: 'CryptoWhale',
-                        pnl: '+$45,230',
-                        winRate: '78%',
-                        followers: 1247,
-                        trades: 156,
-                        avatar: 'CW'
-                    },
-                    {
-                        address: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM',
-                        username: 'SolanaSniper',
-                        pnl: '+$32,180',
-                        winRate: '65%',
-                        followers: 892,
-                        trades: 203,
-                        avatar: 'SS'
-                    },
-                    {
-                        address: '3Jw1kXz4KvQgAC8hg4K5YPmYqNQ8h4GWTFdZsKz9LMNn',
-                        username: 'DiamondHands',
-                        pnl: '+$28,945',
-                        winRate: '72%',
-                        followers: 654,
-                        trades: 89,
-                        avatar: 'DH'
-                    }
-                ];
-
-                const tradersList = document.getElementById('topTradersList');
-                tradersList.innerHTML = traders.map(trader => `
-                    <div class="trader-card">
-                        <div class="trader-header">
-                            <div class="trader-info">
-                                <div class="trader-avatar">${trader.avatar}</div>
-                                <div>
-                                    <h3>${trader.username}</h3>
-                                    <p>${trader.address.slice(0, 8)}...${trader.address.slice(-4)}</p>
-                                </div>
-                            </div>
-                            <button class="follow-btn" onclick="followTrader('${trader.address}')">Follow</button>
-                        </div>
-                        <div class="trader-stats">
-                            <div class="stat-item">
-                                <div class="stat-value">${trader.pnl}</div>
-                                <div>P&L</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${trader.winRate}</div>
-                                <div>Win Rate</div>
-                            </div>
-                            <div class="stat-item">
-                                <div class="stat-value">${trader.followers}</div>
-                                <div>Followers</div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Failed to load top traders:', error);
-            }
-        }
-
-        async function loadWhaleActivity() {
-            try {
-                const whaleData = [
-                    {
-                        amount: '1,250 SOL',
-                        token: 'SOL',
-                        type: 'Buy',
-                        wallet: '7xKXtg...Z1n',
-                        time: '2 minutes ago',
-                        value: '$312,500'
-                    },
-                    {
-                        amount: '50,000 USDC',
-                        token: 'USDC',
-                        type: 'Transfer',
-                        wallet: '9WzDXw...WWM',
-                        time: '8 minutes ago',
-                        value: '$50,000'
-                    },
-                    {
-                        amount: '800 SOL',
-                        token: 'SOL',
-                        type: 'Sell',
-                        wallet: '3Jw1kX...LMNn',
-                        time: '15 minutes ago',
-                        value: '$200,000'
-                    }
-                ];
-
-                const whaleList = document.getElementById('whaleActivityList');
-                whaleList.innerHTML = whaleData.map(whale => `
-                    <div class="whale-item">
-                        <div class="whale-header">
-                            <div class="whale-amount">${whale.amount}</div>
-                            <div class="whale-time">${whale.time}</div>
-                        </div>
-                        <div class="whale-details">
-                            ${whale.type} • ${whale.wallet} • ${whale.value}
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Failed to load whale activity:', error);
-            }
-        }
-
-        async function loadSentimentData() {
-            try {
-                const sentiments = [
-                    {
-                        user: 'TraderJoe',
-                        sentiment: 'bullish',
-                        token: 'SOL',
-                        comment: 'SOL looking strong with new ecosystem developments. Expecting breakout above $200.',
-                        time: '5 minutes ago',
-                        upvotes: 12,
-                        downvotes: 2
-                    },
-                    {
-                        user: 'CryptoAnalyst',
-                        sentiment: 'bearish',
-                        token: 'BONK',
-                        comment: 'BONK showing weakness in current market conditions. Consider taking profits.',
-                        time: '12 minutes ago',
-                        upvotes: 8,
-                        downvotes: 5
-                    },
-                    {
-                        user: 'DeFiMaxi',
-                        sentiment: 'neutral',
-                        token: 'RAY',
-                        comment: 'Raydium consolidating in current range. Waiting for clear direction.',
-                        time: '18 minutes ago',
-                        upvotes: 6,
-                        downvotes: 1
-                    }
-                ];
-
-                const sentimentPosts = document.getElementById('sentimentPosts');
-                sentimentPosts.innerHTML = sentiments.map(post => `
-                    <div class="sentiment-post">
-                        <div class="sentiment-header">
-                            <div>
-                                <strong>${post.user}</strong> • ${post.token}
-                                <span class="sentiment-badge ${post.sentiment}">${post.sentiment}</span>
-                            </div>
-                            <div class="whale-time">${post.time}</div>
-                        </div>
-                        <div style="margin: 12px 0; color: var(--text-secondary); line-height: 1.5;">${post.comment}</div>
-                        <div style="display: flex; gap: 16px; font-size: 12px; color: var(--text-muted);">
-                            <span>👍 ${post.upvotes}</span>
-                            <span>👎 ${post.downvotes}</span>
-                        </div>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Failed to load sentiment data:', error);
-            }
-        }
-
-        async function loadAchievements() {
-            try {
-                const achievements = [
-                    { id: 1, icon: '🚀', title: 'First Trade', desc: 'Execute your first trade', unlocked: true },
-                    { id: 2, icon: '💎', title: 'Diamond Hands', desc: 'Hold for 30 days', unlocked: true },
-                    { id: 3, icon: '🐋', title: 'Whale Spotter', desc: 'Spot 10 whale trades', unlocked: false },
-                    { id: 4, icon: '📈', title: 'Profit Maker', desc: 'Achieve 10% profit', unlocked: true },
-                    { id: 5, icon: '👥', title: 'Social Trader', desc: 'Follow 5 traders', unlocked: false },
-                    { id: 6, icon: '🎯', title: 'Alert Master', desc: 'Create 10 alerts', unlocked: false },
-                    { id: 7, icon: '⚡', title: 'Speed Trader', desc: 'Complete 100 trades', unlocked: false },
-                    { id: 8, icon: '🏆', title: 'Top Performer', desc: 'Top 10% returns', unlocked: false }
-                ];
-
-                const achievementsList = document.getElementById('achievementsList');
-                achievementsList.innerHTML = `
-                    <h2 class="section-title">🏅 Achievements</h2>
-                    <div class="achievements-grid">
-                        ${achievements.map(achievement => `
-                            <div class="achievement-card ${achievement.unlocked ? 'unlocked' : ''}">
-                                <div class="achievement-icon">${achievement.icon}</div>
-                                <div class="achievement-title">${achievement.title}</div>
-                                <div class="achievement-desc">${achievement.desc}</div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-
-            } catch (error) {
-                console.error('Failed to load achievements:', error);
-            }
-        }
-
-        // Alert Functions
-        async function createAlert() {
-            if (!walletConnected) {
-                showNotification('Please connect your wallet first', 'error');
-                return;
-            }
-
-            const token = document.getElementById('alertToken').value;
-            const type = document.getElementById('alertType').value;
-            const price = document.getElementById('targetPrice').value;
-            const direction = document.getElementById('alertDirection').value;
-
-            if (!token || !price) {
-                showNotification('Please fill in all fields', 'error');
-                return;
-            }
-
-            try {
-                showNotification('Creating alert...', 'info');
-                
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                showNotification('Alert created successfully!', 'success');
-                
-                // Reset form
-                document.getElementById('alertToken').value = '';
-                document.getElementById('targetPrice').value = '';
-                
-                // Refresh alerts list
-                await loadActiveAlerts();
-
-            } catch (error) {
-                console.error('Failed to create alert:', error);
-                showNotification('Failed to create alert', 'error');
-            }
-        }
-
-        async function loadActiveAlerts() {
-            try {
-                const alerts = [
-                    {
-                        id: 1,
-                        token: 'SOL',
-                        type: 'Price Alert',
-                        target: '$180.00',
-                        direction: 'above',
-                        created: '2 hours ago'
-                    },
-                    {
-                        id: 2,
-                        token: 'RAY',
-                        type: 'Volume Alert',
-                        target: '10M',
-                        direction: 'above',
-                        created: '1 day ago'
-                    }
-                ];
-
-                const alertsList = document.getElementById('activeAlertsList');
-                alertsList.innerHTML = alerts.map(alert => `
-                    <div class="alert-item">
-                        <div class="alert-details">
-                            <h4>${alert.token} - ${alert.type}</h4>
-                            <p>${alert.direction} ${alert.target} • ${alert.created}</p>
-                        </div>
-                        <button class="delete-alert" onclick="deleteAlert(${alert.id})">Delete</button>
-                    </div>
-                `).join('');
-
-            } catch (error) {
-                console.error('Failed to load alerts:', error);
-            }
-        }
-
-        async function deleteAlert(alertId) {
-            try {
-                showNotification('Deleting alert...', 'info');
-                await new Promise(resolve => setTimeout(resolve, 500));
-                showNotification('Alert deleted successfully!', 'success');
-                await loadActiveAlerts();
-            } catch (error) {
-                console.error('Failed to delete alert:', error);
-                showNotification('Failed to delete alert', 'error');
-            }
-        }
-
-        // Copy Trading Functions
-        async function createCopyTrade() {
-            if (!walletConnected) {
-                showNotification('Please connect your wallet first', 'error');
-                return;
-            }
-
-            const targetTrader = document.getElementById('targetTrader').value;
-            const allocationAmount = document.getElementById('allocationAmount').value;
-            const maxSlippage = document.getElementById('maxSlippage').value;
-
-            if (!targetTrader || !allocationAmount) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
-
-            if (parseFloat(allocationAmount) < 0.1 || parseFloat(allocationAmount) > 5.0) {
-                showNotification('Allocation amount must be between 0.1 and 5.0 SOL', 'error');
-                return;
-            }
-
-            try {
-                showNotification('Setting up copy trade...', 'info');
-                
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                
-                showNotification('Copy trade setup successfully!', 'success');
-                
-                // Reset form
-                document.getElementById('targetTrader').value = '';
-                document.getElementById('allocationAmount').value = '';
-                document.getElementById('maxSlippage').value = '5';
-
-            } catch (error) {
-                console.error('Failed to create copy trade:', error);
-                showNotification('Failed to setup copy trade', 'error');
-            }
-        }
-
-        async function followTrader(traderAddress) {
-            if (!walletConnected) {
-                showNotification('Please connect your wallet first', 'error');
-                return;
-            }
-
-            try {
-                showNotification('Following trader...', 'info');
-                
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                showNotification('Now following trader!', 'success');
-
-            } catch (error) {
-                console.error('Failed to follow trader:', error);
-                showNotification('Failed to follow trader', 'error');
-            }
-        }
-
-        // User Account Functions
-        async function initializeUser() {
-            if (!walletConnected) return;
-
-            try {
-                const username = `user_${walletAddress.slice(-4)}`;
-                const notificationPrefs = {
-                    price_alerts: true,
-                    whale_alerts: true,
-                    portfolio_changes: true,
-                    social_updates: false,
-                    achievement_unlocked: true,
-                    copy_trade_updates: true
-                };
-
-                console.log('Initializing user account...');
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                console.log('User account initialized');
-
-            } catch (error) {
-                console.error('Failed to initialize user:', error);
-            }
-        }
-
-        // Utility Functions
-        function switchSection(sectionName) {
-            // Update navigation (both tab and bottom nav)
-            document.querySelectorAll('.nav-item, .nav-tab').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.querySelectorAll(`[data-section="${sectionName}"]`).forEach(item => {
-                item.classList.add('active');
-            });
-
-            // Update content
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById(sectionName).classList.add('active');
-
-            // Load section-specific data
-            if (sectionName === 'alerts' && walletConnected) {
-                loadActiveAlerts();
-                loadTokenOptions();
-            }
-        }
-
-        async function loadTokenOptions() {
-            try {
-                const response = await fetch(`${API_CONFIG.coingecko}/coins/markets?vs_currency=usd&category=solana-ecosystem&order=market_cap_desc&per_page=50&page=1`);
-                const tokens = await response.json();
-
-                const selectElement = document.getElementById('alertToken');
-                selectElement.innerHTML = '<option value="">Select token</option>' +
-                    tokens.map(token => `<option value="${token.symbol}">${token.symbol.toUpperCase()} - ${token.name}</option>`).join('');
-
-            } catch (error) {
-                console.error('Failed to load token options:', error);
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification show ${type}`;
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
-        }
-
-        function updateRiskScore() {
-            const riskMeter = document.getElementById('riskMeter');
-            const riskWarnings = document.getElementById('riskWarnings');
-            
-            let riskScore = 50;
-            let warnings = [];
-
-            if (userTokens.length > 0) {
-                const totalValue = userTokens.reduce((sum, token) => sum + token.value, 0);
-                const concentrations = userTokens.map(token => (token.value / totalValue) * 100);
-                const maxConcentration = Math.max(...concentrations);
-
-                if (maxConcentration > 70) {
-                    riskScore = 80;
-                    warnings.push('High concentration risk: Over 70% in single asset');
-                } else if (maxConcentration > 50) {
-                    riskScore = 65;
-                    warnings.push('Medium concentration risk: Over 50% in single asset');
-                }
-
-                const highVolTokens = userTokens.filter(token => Math.abs(token.change24h) > 10);
-                if (highVolTokens.length > 0) {
-                    riskScore += 10;
-                    warnings.push(`High volatility exposure: ${highVolTokens.length} volatile assets`);
-                }
-            }
-
-            riskMeter.textContent = riskScore;
-            riskMeter.className = `risk-meter ${riskScore < 40 ? 'low' : riskScore < 70 ? 'medium' : 'high'}`;
-
-            riskWarnings.innerHTML = warnings.map(warning => 
-                `<div class="warning-item">${warning}</div>`
-            ).join('');
-        }
-
-        // Background monitoring for price updates
-        setInterval(async () => {
-            if (walletConnected) {
-                await loadPortfolioData();
-                updateRiskScore();
-            }
-        }, 30000);
-
-        // Initialize token data
-        async function loadTokenData() {
-            try {
-                console.log('Loading initial token data...');
-            } catch (error) {
-                console.error('Failed to load token data:', error);
-            }
-        }
-    </script>
-</body>
-</html>
