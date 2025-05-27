@@ -3,39 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cypher - Solana Portfolio Tracker</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <title>Cypher - Portfolio Analytics</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-        
-        :root {
-            --bg-primary: #0A0A0F;
-            --bg-secondary: #121218;
-            --bg-tertiary: #1A1A23;
-            --bg-card: #1E1E2A;
-            --bg-glass: rgba(30, 30, 42, 0.8);
-            --bg-hover: rgba(99, 102, 241, 0.1);
-            
-            --accent-primary: #6366F1;
-            --accent-secondary: #8B5CF6;
-            --accent-tertiary: #06B6D4;
-            --accent-pink: #EC4899;
-            
-            --text-primary: #F8FAFC;
-            --text-secondary: #CBD5E1;
-            --text-muted: #64748B;
-            
-            --border-subtle: rgba(248, 250, 252, 0.1);
-            --border-primary: rgba(139, 92, 246, 0.3);
-            
-            --success: #10B981;
-            --warning: #F59E0B;
-            --error: #EF4444;
-            
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -43,313 +16,282 @@
         }
 
         body {
-            font-family: 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
-            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: #ffffff;
             min-height: 100vh;
-            line-height: 1.6;
             overflow-x: hidden;
         }
 
-        .bg-particles {
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
+            right: 0;
+            z-index: 1000;
         }
 
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: var(--accent-primary);
-            border-radius: 50%;
-            animation: float 15s infinite linear;
-            opacity: 0.4;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.4; }
-            90% { opacity: 0.4; }
-            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .container {
-            max-width: 428px;
-            margin: 0 auto;
-            padding: 0 20px;
-            position: relative;
-        }
-
-        .header {
+        .header-content {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 24px 0;
-            border-bottom: 1px solid var(--border-subtle);
-            position: sticky;
-            top: 0;
-            backdrop-filter: blur(20px);
-            background: rgba(10, 10, 15, 0.9);
-            z-index: 100;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .logo {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            cursor: pointer;
-            transition: transform 0.3s ease;
-            user-select: none;
+            background-clip: text;
         }
 
-        .logo:hover {
-            transform: scale(1.05);
+        .wallet-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .wallet-btn {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             border: none;
-            padding: 12px 24px;
-            border-radius: 16px;
-            color: var(--text-primary);
-            font-weight: 500;
-            font-size: 14px;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: var(--shadow-md);
-            position: relative;
-            min-width: 140px;
+            font-size: 0.9rem;
         }
 
         .wallet-btn:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
         }
 
-        .wallet-btn:active {
-            transform: translateY(0);
+        .wallet-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
         }
 
-        .wallet-btn.connected {
-            background: var(--bg-card);
-            border: 1px solid var(--border-primary);
-            color: var(--accent-secondary);
-        }
-
-        .wallet-btn.loading::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 16px;
-            height: 16px;
-            margin: -8px 0 0 -8px;
-            border: 2px solid transparent;
-            border-top: 2px solid currentColor;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+        /* Navigation */
+        .nav-container {
+            margin-top: 80px;
+            padding: 0 1rem;
         }
 
         .nav-tabs {
             display: flex;
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 6px;
-            margin: 24px 0;
-            backdrop-filter: blur(20px);
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 0.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .nav-tab {
             flex: 1;
+            padding: 1rem 0.5rem;
             text-align: center;
-            padding: 12px;
-            border-radius: 14px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
             font-weight: 500;
-            font-size: 14px;
-            color: var(--text-muted);
-            user-select: none;
+            position: relative;
         }
 
         .nav-tab.active {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: var(--text-primary);
-            box-shadow: var(--shadow-md);
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
         }
 
-        .nav-tab:hover:not(.active) {
-            color: var(--text-secondary);
-            background: var(--bg-hover);
-        }
-
-        .content-section {
-            display: none;
-            animation: slideIn 0.4s ease;
-            padding-bottom: 120px;
-        }
-
-        .content-section.active {
+        .nav-tab i {
             display: block;
+            font-size: 1.2rem;
+            margin-bottom: 0.3rem;
         }
 
-        .portfolio-header {
-            background: linear-gradient(135deg, 
-                rgba(139, 92, 246, 0.15) 0%, 
-                rgba(99, 102, 241, 0.15) 50%, 
-                rgba(6, 182, 212, 0.15) 100%);
-            border: 1px solid var(--border-primary);
-            border-radius: 24px;
-            padding: 32px 24px;
-            margin: 24px 0;
-            text-align: center;
-            backdrop-filter: blur(20px);
+        /* Content Sections */
+        .content {
+            flex: 1;
+            padding: 0 1rem 6rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
         }
 
-        .portfolio-value {
-            font-size: 36px;
-            font-weight: 700;
-            margin-bottom: 8px;
-            background: linear-gradient(135deg, var(--text-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .section {
+            display: none;
         }
 
-        .portfolio-change {
-            font-size: 16px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
+        .section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
         }
 
-        .portfolio-change.positive { color: var(--success); }
-        .portfolio-change.negative { color: var(--error); }
-
-        .chart-container {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 24px;
-            padding: 24px;
-            margin: 24px 0;
-            height: 320px;
-            backdrop-filter: blur(20px);
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .chart-controls {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .chart-btn {
-            padding: 8px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-            background: transparent;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 13px;
-            font-weight: 500;
-            user-select: none;
-        }
-
-        .chart-btn:hover {
-            background: var(--bg-hover);
-            color: var(--text-secondary);
-        }
-
-        .chart-btn.active {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border-color: var(--accent-primary);
-            color: var(--text-primary);
-        }
-
+        /* Cards */
         .card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
             backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
-            margin-bottom: 16px;
         }
 
         .card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--border-primary);
+            transform: translateY(-5px);
+            border-color: rgba(255, 107, 107, 0.3);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .card-subtitle {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 0.2rem;
+        }
+
+        /* Portfolio Stats */
+        .portfolio-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(78, 205, 196, 0.1));
+            border-radius: 15px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-change {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+
+        .positive { color: #4ecdc4; }
+        .negative { color: #ff6b6b; }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 1rem;
+        }
+
+        /* Token List */
+        .token-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
         }
 
         .token-item {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            backdrop-filter: blur(20px);
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
-            margin-bottom: 12px;
-            cursor: pointer;
         }
 
         .token-item:hover {
-            background: var(--bg-hover);
-            border-color: var(--border-primary);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(255, 107, 107, 0.3);
         }
 
         .token-info {
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 1rem;
         }
 
         .token-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-weight: 700;
+            color: white;
+        }
+
+        .token-details h4 {
+            font-size: 1rem;
             font-weight: 600;
-            font-size: 16px;
-            color: var(--text-primary);
+            margin-bottom: 0.2rem;
         }
 
-        .token-details h3 {
-            font-size: 16px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: var(--text-primary);
-        }
-
-        .token-details p {
-            font-size: 13px;
-            color: var(--text-muted);
+        .token-details span {
+            color: #888;
+            font-size: 0.8rem;
         }
 
         .token-stats {
@@ -357,560 +299,1527 @@
         }
 
         .token-price {
-            font-size: 16px;
+            font-size: 1.1rem;
             font-weight: 600;
-            margin-bottom: 4px;
-            color: var(--text-primary);
+            margin-bottom: 0.2rem;
         }
 
         .token-change {
-            font-size: 13px;
+            font-size: 0.9rem;
             font-weight: 500;
-            padding: 4px 8px;
-            border-radius: 6px;
         }
 
-        .token-change.positive {
-            color: var(--success);
-            background: rgba(16, 185, 129, 0.1);
-        }
-
-        .token-change.negative {
-            color: var(--error);
-            background: rgba(239, 68, 68, 0.1);
-        }
-
-        .section-title {
-            font-size: 20px;
-            font-weight: 600;
-            margin-bottom: 20px;
+        /* Alerts */
+        .alert-item {
             display: flex;
             align-items: center;
-            gap: 12px;
-            color: var(--text-primary);
+            justify-content: space-between;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            border-left: 4px solid #ff6b6b;
         }
 
-        .form-container {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 20px;
-            padding: 24px;
-            margin: 24px 0;
-            backdrop-filter: blur(20px);
+        .alert-active {
+            border-left-color: #4ecdc4;
         }
 
+        .alert-triggered {
+            border-left-color: #ffa500;
+            opacity: 0.7;
+        }
+
+        /* Social Features */
+        .social-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-item:hover {
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: white;
+        }
+
+        .social-content {
+            flex: 1;
+        }
+
+        .social-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .timestamp {
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        .social-stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .social-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            color: #888;
+            font-size: 0.8rem;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+
+        /* Forms */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 1.5rem;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            font-weight: 500;
-            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #ffffff;
         }
 
-        .form-input, .form-select {
+        .form-input {
             width: 100%;
-            padding: 14px 16px;
-            border-radius: 12px;
-            border: 1px solid var(--border-subtle);
-            background: var(--bg-card);
-            color: var(--text-primary);
-            font-size: 14px;
-            transition: all 0.3s ease;
-            font-family: inherit;
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1rem;
         }
 
-        .form-input:focus, .form-select:focus {
+        .form-input:focus {
             outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+            border-color: #ff6b6b;
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
         }
 
-        .form-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .submit-btn {
+        .form-select {
             width: 100%;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-weight: 500;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: inherit;
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 1rem;
         }
 
-        .submit-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(10px);
         }
 
-        .submit-btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
+        .modal.active {
+            display: flex;
         }
 
-        .trader-card {
-            background: var(--bg-glass);
-            border: 1px solid var(--border-subtle);
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 16px;
+        .modal-content {
+            background: rgba(10, 10, 10, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(20px);
-            transition: all 0.3s ease;
         }
 
-        .trader-card:hover {
-            border-color: var(--border-primary);
-            transform: translateY(-2px);
-        }
-
-        .trader-header {
+        .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 1.5rem;
         }
 
-        .trader-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 700;
         }
 
-        .trader-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, var(--accent-pink), var(--warning));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 14px;
-            color: var(--text-primary);
-        }
-
-        .trader-info div h3 {
-            font-size: 15px;
-            font-weight: 500;
-            margin-bottom: 4px;
-            color: var(--text-primary);
-        }
-
-        .trader-info div p {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .follow-btn {
-            background: linear-gradient(135deg, var(--accent-tertiary), var(--accent-primary));
+        .close-btn {
+            background: none;
             border: none;
-            color: var(--text-primary);
-            padding: 8px 16px;
-            border-radius: 8px;
+            color: #888;
+            font-size: 1.5rem;
             cursor: pointer;
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            font-family: inherit;
+            padding: 0.5rem;
         }
 
-        .follow-btn:hover {
-            transform: translateY(-1px);
+        .close-btn:hover {
+            color: #ffffff;
         }
 
-        .follow-btn.following {
-            background: var(--bg-card);
-            border: 1px solid var(--success);
-            color: var(--success);
-        }
-
-        .trader-stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 12px;
-        }
-
-        .stat-item {
-            text-align: center;
-            padding: 12px;
-            background: rgba(30, 30, 42, 0.5);
-            border-radius: 8px;
-            border: 1px solid var(--border-subtle);
-        }
-
-        .stat-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--success);
-            margin-bottom: 4px;
-        }
-
-        .stat-item div:last-child {
-            color: var(--text-muted);
-            font-size: 11px;
-        }
-
+        /* Loading */
         .loading {
             display: flex;
-            justify-content: center;
             align-items: center;
-            padding: 40px;
+            justify-content: center;
+            padding: 2rem;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid var(--border-subtle);
-            border-top: 3px solid var(--accent-primary);
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #ff6b6b;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-muted);
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .empty-state-icon {
-            font-size: 48px;
-            margin-bottom: 16px;
-            opacity: 0.5;
+        /* Achievement Badge */
+        .achievement-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            background: linear-gradient(45deg, #ffd700, #ffa500);
+            color: #000;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
         }
 
-        .empty-state h3 {
-            font-size: 18px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-secondary);
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0;
+            }
+
+            .logo {
+                font-size: 1.3rem;
+            }
+
+            .nav-tabs {
+                overflow-x: auto;
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+            }
+
+            .nav-tabs::-webkit-scrollbar {
+                display: none;
+            }
+
+            .nav-tab {
+                min-width: 80px;
+                font-size: 0.8rem;
+            }
+
+            .portfolio-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-value {
+                font-size: 1.4rem;
+            }
+
+            .token-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .token-stats {
+                text-align: left;
+                width: 100%;
+            }
+
+            .modal-content {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
         }
 
-        .empty-state p {
-            font-size: 14px;
+        /* Animations */
+        .pulse {
+            animation: pulse 2s infinite;
         }
 
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100%;
-            max-width: 428px;
-            background: rgba(10, 10, 15, 0.95);
-            backdrop-filter: blur(30px);
-            border-top: 1px solid var(--border-subtle);
-            padding: 16px 20px 24px;
-            z-index: 1000;
-        }
-
-        .nav-items {
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            color: var(--text-muted);
-            min-width: 60px;
-            user-select: none;
-        }
-
-        .nav-item.active {
-            color: var(--accent-primary);
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        .nav-item:hover:not(.active) {
-            color: var(--text-secondary);
-            background: var(--bg-hover);
-        }
-
-        .nav-icon {
-            font-size: 20px;
-        }
-
-        .nav-label {
-            font-size: 10px;
-            font-weight: 500;
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
         }
 
         .notification {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--bg-glass);
-            border: 1px solid var(--border-primary);
-            color: var(--text-primary);
-            padding: 16px 20px;
-            border-radius: 12px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 1001;
+            top: 100px;
+            right: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            z-index: 1500;
             transform: translateX(100%);
-            transition: all 0.4s ease;
-            backdrop-filter: blur(20px);
-            max-width: 300px;
+            transition: transform 0.3s ease;
         }
 
         .notification.show {
             transform: translateX(0);
         }
 
-        .notification.success {
-            border-color: var(--success);
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), var(--bg-glass));
+        .coming-soon {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #888;
         }
 
-        .notification.error {
-            border-color: var(--error);
-            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--bg-glass));
+        .coming-soon i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ff6b6b;
         }
 
-        .notification.info {
-            border-color: var(--accent-tertiary);
-            background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), var(--bg-glass));
-        }
-
-        .delete-btn {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--error);
-            color: var(--error);
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 12px;
-            font-family: inherit;
-            transition: all 0.3s ease;
-        }
-
-        .delete-btn:hover {
-            background: rgba(239, 68, 68, 0.2);
-            transform: translateY(-1px);
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 16px;
-            }
-            
-            .portfolio-value {
-                font-size: 32px;
-            }
-
-            .notification {
-                right: 16px;
-                left: 16px;
-                max-width: none;
-            }
+        .coming-soon h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
         }
     </style>
 </head>
 <body>
-    <div class="bg-particles" id="bgParticles"></div>
-
-    <div class="container">
+    <div class="app-container">
+        <!-- Header -->
         <header class="header">
-            <div class="logo">Cypher</div>
-            <button class="wallet-btn" id="walletBtn">Connect Wallet</button>
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-chart-line"></i> Cypher
+                </div>
+                <div class="wallet-section">
+                    <div id="walletInfo" class="wallet-info" style="display: none;">
+                        <i class="fas fa-wallet"></i>
+                        <span id="walletAddress"></span>
+                        <span id="solBalance">0 SOL</span>
+                    </div>
+                    <button id="connectWallet" class="wallet-btn">
+                        <i class="fas fa-plug"></i> Connect Wallet
+                    </button>
+                </div>
+            </div>
         </header>
 
-        <div class="nav-tabs">
-            <div class="nav-tab active" data-section="portfolio">Portfolio</div>
-            <div class="nav-tab" data-section="social">Social</div>
-            <div class="nav-tab" data-section="alerts">Alerts</div>
-            <div class="nav-tab" data-section="analytics">Analytics</div>
+        <!-- Navigation -->
+        <div class="nav-container">
+            <div class="nav-tabs">
+                <div class="nav-tab active" data-section="portfolio">
+                    <i class="fas fa-chart-pie"></i>
+                    Portfolio
+                </div>
+                <div class="nav-tab" data-section="traders">
+                    <i class="fas fa-users"></i>
+                    Traders
+                </div>
+                <div class="nav-tab" data-section="alerts">
+                    <i class="fas fa-bell"></i>
+                    Alerts
+                </div>
+                <div class="nav-tab" data-section="whale">
+                    <i class="fas fa-fish"></i>
+                    Whale
+                </div>
+                <div class="nav-tab" data-section="social">
+                    <i class="fas fa-comments"></i>
+                    Social
+                </div>
+                <div class="nav-tab" data-section="tournaments">
+                    <i class="fas fa-trophy"></i>
+                    Tournaments
+                </div>
+            </div>
         </div>
 
-        <main>
-            <section class="content-section active" id="portfolio">
-                <div class="portfolio-header">
-                    <div class="portfolio-value" id="portfolioValue">$0.00</div>
-                    <div class="portfolio-change" id="portfolioChange">
-                        <span>+$0.00 (0.00%)</span>
-                        <span>24h</span>
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Portfolio Section -->
+            <section id="portfolio" class="section active">
+                <div class="portfolio-stats">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalValue">$0.00</div>
+                        <div class="stat-label">Total Value</div>
+                        <div class="stat-change positive" id="totalChange">+0.00%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="solValue">0 SOL</div>
+                        <div class="stat-label">SOL Value</div>
+                        <div class="stat-change" id="solChange">+0.00%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="tokenCount">0</div>
+                        <div class="stat-label">Tokens</div>
+                        <div class="stat-change positive" id="tokenChange">+0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="pnlValue">$0.00</div>
+                        <div class="stat-label">24h P&L</div>
+                        <div class="stat-change" id="pnlChange">+0.00%</div>
                     </div>
                 </div>
 
-                <div class="chart-container">
-                    <div class="chart-controls">
-                        <button class="chart-btn active" data-period="1D">1D</button>
-                        <button class="chart-btn" data-period="1W">1W</button>
-                        <button class="chart-btn" data-period="1M">1M</button>
-                        <button class="chart-btn" data-period="1Y">1Y</button>
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <h3 class="card-title">Portfolio Performance</h3>
+                            <p class="card-subtitle">Real-time portfolio tracking</p>
+                        </div>
+                        <div>
+                            <select id="chartTimeframe" class="form-select" style="width: auto; padding: 0.5rem;">
+                                <option value="24h">24H</option>
+                                <option value="7d">7D</option>
+                                <option value="30d">30D</option>
+                                <option value="1y">1Y</option>
+                            </select>
+                        </div>
                     </div>
-                    <canvas id="portfolioChart"></canvas>
+                    <div class="chart-container">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
                 </div>
 
-                <div id="tokenList">
-                    <div class="loading">
-                        <div class="spinner"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Token Holdings</h3>
+                        <button class="btn btn-secondary btn-small" onclick="refreshPortfolio()">
+                            <i class="fas fa-sync-alt"></i> Refresh
+                        </button>
+                    </div>
+                    <div id="tokenList" class="token-list">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section class="content-section" id="social">
-                <h2 class="section-title">🏆 Top Performers</h2>
-                <div id="topTradersList">
-                    <div class="loading">
-                        <div class="spinner"></div>
+            <!-- Traders Section -->
+            <section id="traders" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Top Performing Traders</h3>
+                        <p class="card-subtitle">Similar token holders analysis</p>
+                    </div>
+                    <div id="tradersList" class="social-item">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
                     </div>
                 </div>
 
-                <h2 class="section-title">📋 Copy Trading</h2>
-                <div class="form-container">
-                    <div class="form-group">
-                        <label class="form-label">Target Trader Wallet</label>
-                        <input type="text" class="form-input" id="targetTrader" placeholder="Enter wallet address">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Copy Trading</h3>
+                        <button class="btn btn-primary btn-small" onclick="openCopyTradeModal()">
+                            <i class="fas fa-plus"></i> New Copy Trade
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Allocation Amount (SOL)</label>
-                        <input type="number" class="form-input" id="allocationAmount" placeholder="0.1 - 5.0" min="0.1" max="5.0" step="0.1">
+                    <div id="copyTradesList">
+                        <p style="color: #888; text-align: center; padding: 2rem;">
+                            No active copy trades. Start following top performers!
+                        </p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Max Slippage (%)</label>
-                        <input type="number" class="form-input" id="maxSlippage" placeholder="1-10" min="1" max="10" value="5">
-                    </div>
-                    <button class="submit-btn" id="copyTradeBtn">Start Copy Trading</button>
                 </div>
             </section>
 
-            <section class="content-section" id="alerts">
-                <h2 class="section-title">🔔 Create Alert</h2>
-                <div class="form-container">
+            <!-- Alerts Section -->
+            <section id="alerts" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Price Alerts</h3>
+                        <button class="btn btn-primary btn-small" onclick="openAlertModal()">
+                            <i class="fas fa-plus"></i> New Alert
+                        </button>
+                    </div>
+                    <div id="alertsList">
+                        <p style="color: #888; text-align: center; padding: 2rem;">
+                            No alerts set. Create your first price alert!
+                        </p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Trending Tokens</h3>
+                        <p class="card-subtitle">Minimum $1M market cap</p>
+                    </div>
+                    <div id="trendingTokens" class="token-list">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Whale Tracking Section -->
+            <section id="whale" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Whale Activity</h3>
+                        <p class="card-subtitle">Large transactions for your tokens</p>
+                    </div>
                     <div class="form-group">
-                        <label class="form-label">Token</label>
-                        <select class="form-select" id="alertToken">
-                            <option value="">Select token</option>
+                        <label class="form-label">Alert Threshold</label>
+                        <select id="whaleThreshold" class="form-select">
+                            <option value="20">20 SOL</option>
+                            <option value="50" selected>50 SOL</option>
+                            <option value="100">100 SOL</option>
+                            <option value="custom">Custom Amount</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Target Price ($)</label>
-                        <input type="number" class="form-input" id="targetPrice" placeholder="0.00" step="0.01">
+                    <div id="whaleActivity">
+                        <p style="color: #888; text-align: center; padding: 2rem;">
+                            No whale activity detected in the last 24 hours.
+                        </p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Alert Direction</label>
-                        <select class="form-select" id="alertDirection">
-                            <option value="above">Above target</option>
-                            <option value="below">Below target</option>
-                        </select>
-                    </div>
-                    <button class="submit-btn" id="createAlertBtn">Create Alert</button>
                 </div>
 
-                <h2 class="section-title">📋 Active Alerts</h2>
-                <div id="alertsList">
-                    <div class="loading">
-                        <div class="spinner"></div>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Followed Wallets</h3>
+                        <button class="btn btn-primary btn-small" onclick="openFollowModal()">
+                            <i class="fas fa-plus"></i> Follow Wallet
+                        </button>
+                    </div>
+                    <div id="followedWallets">
+                        <p style="color: #888; text-align: center; padding: 2rem;">
+                            Start following wallets to track their activity.
+                        </p>
                     </div>
                 </div>
             </section>
 
-            <section class="content-section" id="analytics">
-                <h2 class="section-title">📊 Analytics</h2>
-                <div class="card" style="padding: 24px; text-align: center;">
-                    <h3 style="margin-bottom: 16px;">Coming Soon</h3>
-                    <p style="color: var(--text-muted);">Advanced analytics and risk monitoring features will be available soon.</p>
+            <!-- Social Section -->
+            <section id="social" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Sentiment Forum</h3>
+                        <button class="btn btn-primary btn-small" onclick="openSentimentModal()">
+                            <i class="fas fa-plus"></i> New Post
+                        </button>
+                    </div>
+                    <div id="sentimentFeed">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Leaderboard</h3>
+                        <p class="card-subtitle">Most-followed wallets this week</p>
+                    </div>
+                    <div id="leaderboard">
+                        <div class="loading">
+                            <div class="spinner"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tournaments Section -->
+            <section id="tournaments" class="section">
+                <div class="coming-soon">
+                    <i class="fas fa-trophy"></i>
+                    <h3>WalletWars Tournaments</h3>
+                    <p>Epic portfolio battles coming soon! Compete with other traders in real-time tournaments.</p>
+                    <button class="btn btn-secondary" style="margin-top: 1rem;">
+                        <i class="fas fa-envelope"></i> Notify Me
+                    </button>
                 </div>
             </section>
         </main>
-
-        <nav class="bottom-nav">
-            <div class="nav-items">
-                <div class="nav-item active" data-section="portfolio">
-                    <div class="nav-icon">📊</div>
-                    <div class="nav-label">Portfolio</div>
-                </div>
-                <div class="nav-item" data-section="social">
-                    <div class="nav-icon">👥</div>
-                    <div class="nav-label">Social</div>
-                </div>
-                <div class="nav-item" data-section="alerts">
-                    <div class="nav-icon">🔔</div>
-                    <div class="nav-label">Alerts</div>
-                </div>
-                <div class="nav-item" data-section="analytics">
-                    <div class="nav-icon">📈</div>
-                    <div class="nav-label">Analytics</div>
-                </div>
-            </div>
-        </nav>
     </div>
 
-    <div class="notification" id="notification"></div>
+    <!-- Modals -->
+    <!-- Alert Modal -->
+    <div id="alertModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Create Price Alert</h3>
+                <button class="close-btn" onclick="closeModal('alertModal')">&times;</button>
+            </div>
+            <form id="alertForm">
+                <div class="form-group">
+                    <label class="form-label">Token</label>
+                    <select id="alertToken" class="form-select" required>
+                        <option value="">Select a token</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Alert Type</label>
+                    <select id="alertType" class="form-select" required>
+                        <option value="above">Price Above</option>
+                        <option value="below">Price Below</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price Threshold ($)</label>
+                    <input type="number" id="alertPrice" class="form-input" step="0.000001" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Message (Optional)</label>
+                    <input type="text" id="alertMessage" class="form-input" placeholder="Custom alert message">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Create Alert
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Copy Trade Modal -->
+    <div id="copyTradeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Setup Copy Trading</h3>
+                <button class="close-btn" onclick="closeModal('copyTradeModal')">&times;</button>
+            </div>
+            <form id="copyTradeForm">
+                <div class="form-group">
+                    <label class="form-label">Target Wallet</label>
+                    <input type="text" id="targetWallet" class="form-input" placeholder="Wallet address to copy" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Max Amount per Trade (SOL)</label>
+                    <input type="number" id="maxAmount" class="form-input" min="0.1" max="5" step="0.1" value="1" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stop Loss (%)</label>
+                    <input type="number" id="stopLoss" class="form-input" min="5" max="50" value="20" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Take Profit (%)</label>
+                    <input type="number" id="takeProfit" class="form-input" min="10" max="500" value="50" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Start Copy Trading
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Follow Wallet Modal -->
+    <div id="followModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Follow Wallet</h3>
+                <button class="close-btn" onclick="closeModal('followModal')">&times;</button>
+            </div>
+            <form id="followForm">
+                <div class="form-group">
+                    <label class="form-label">Wallet Address</label>
+                    <input type="text" id="followWallet" class="form-input" placeholder="Enter wallet address" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nickname (Optional)</label>
+                    <input type="text" id="walletNickname" class="form-input" placeholder="Give this wallet a nickname">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Follow Wallet
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Sentiment Post Modal -->
+    <div id="sentimentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Share Sentiment</h3>
+                <button class="close-btn" onclick="closeModal('sentimentModal')">&times;</button>
+            </div>
+            <form id="sentimentForm">
+                <div class="form-group">
+                    <label class="form-label">Token</label>
+                    <select id="sentimentToken" class="form-select" required>
+                        <option value="">Select a token</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Sentiment</label>
+                    <select id="sentimentType" class="form-select" required>
+                        <option value="bullish">🐂 Bullish</option>
+                        <option value="bearish">🐻 Bearish</option>
+                        <option value="neutral">😐 Neutral</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Your Thoughts</label>
+                    <textarea id="sentimentContent" class="form-input" rows="4" placeholder="Share your analysis..." required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Price Prediction ($) - Optional</label>
+                    <input type="number" id="pricePrediction" class="form-input" step="0.000001" placeholder="Your price target">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Post Sentiment
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
 
     <script>
-        console.log('🚀 Cypher dApp Loading...');
-        
-        // Global State
-        let walletConnected = false;
-        let walletAddress = null;
-        let portfolioChart = null;
-        let userTokens = [];
-        let followedTraders = new Set();
-        let activeAlerts = [];
-        let portfolioData = { totalValue: 0, change24h: 0, changePercent: 0 };
+        // Application State
+        const appState = {
+            connected: false,
+            wallet: null,
+            connection: null,
+            userAccount: null,
+            portfolioData: [],
+            priceData: {},
+            alerts: [],
+            followedWallets: [],
+            sentimentPosts: []
+        };
 
-        // API URLs
-        const COINGECKO_API = 'https://api.coingecko.com/api/v3';
+        // Jupiter API Configuration
+        const JUPITER_API_URL = 'https://price.jup.ag/v4';
+        const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
 
-        // Wait for DOM to be ready
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
-        }
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', async () => {
+            initializeEventListeners();
+            await loadInitialData();
+            startDataRefreshInterval();
+        });
 
-        function initApp() {
-            console.log('✅ DOM Ready - Initializing App');
-            setupEventListeners();
-            createBackgroundParticles();
-            loadPortfolioData();
-            loadTopTraders();
-            loadTokenOptions();
-            setupChart();
-            loadActiveAlerts();
-        }
-
-        function setupEventListeners() {
-            console.log('🔧 Setting up event listeners');
-            
-            // Wallet button
-            const walletBtn = document.getElementById('walletBtn');
-            if (walletBtn) {
-                walletBtn.addEventListener('click', handleWalletClick);
-                console.log('✅ Wallet button listener added');
-            }
-
-            // Navigation tabs
-            const navTabs = document.querySelectorAll('.nav-item, .nav-tab');
-            navTabs.forEach(item => {
-                item.addEventListener('click', function() {
-                    console.log('🔄 Switching to section:', this.dataset.section);
-                    switchSection(this.dataset.section);
-                });
+        function initializeEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchSection(tab.dataset.section));
             });
-            console.log(`✅ ${navTabs.length} Navigation listeners added`);
 
-            // Chart controls
-            const chartBtns = document.querySelectorAll('.chart-btn');
-            chartBtns.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    console.log('📊 Chart period changed to
+            // Wallet Connection
+            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+
+            // Forms
+            document.getElementById('alertForm').addEventListener('submit', createAlert);
+            document.getElementById('copyTradeForm').addEventListener('submit', createCopyTrade);
+            document.getElementById('followForm').addEventListener('submit', followWallet);
+            document.getElementById('sentimentForm').addEventListener('submit', createSentimentPost);
+
+            // Chart timeframe
+            document.getElementById('chartTimeframe').addEventListener('change', updatePortfolioChart);
+        }
+
+        // Wallet Connection
+        async function connectWallet() {
+            try {
+                if (typeof window.solana !== 'undefined') {
+                    const response = await window.solana.connect();
+                    appState.wallet = response.publicKey.toString();
+                    appState.connected = true;
+                    
+                    // Update UI
+                    document.getElementById('connectWallet').style.display = 'none';
+                    document.getElementById('walletInfo').style.display = 'flex';
+                    document.getElementById('walletAddress').textContent = 
+                        appState.wallet.slice(0, 4) + '...' + appState.wallet.slice(-4);
+                    
+                    // Initialize user account and load data
+                    await initializeUserAccount();
+                    await loadUserPortfolio();
+                    
+                    showNotification('Wallet connected successfully!', 'success');
+                } else {
+                    showNotification('Please install Phantom wallet', 'error');
+                }
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                showNotification('Failed to connect wallet', 'error');
+            }
+        }
+
+        async function initializeUserAccount() {
+            // In a real implementation, this would interact with the Solana program
+            // For now, we'll simulate it
+            appState.userAccount = {
+                authority: appState.wallet,
+                username: `trader_${appState.wallet.slice(0, 8)}`,
+                totalPnl: 0,
+                followersCount: 0,
+                followingCount: 0
+            };
+        }
+
+        // Data Loading
+        async function loadInitialData() {
+            await loadTrendingTokens();
+            await loadSentimentFeed();
+            await loadLeaderboard();
+            await loadTopTraders();
+        }
+
+        async function loadUserPortfolio() {
+            if (!appState.connected) return;
+
+            try {
+                showLoading('tokenList');
+                
+                // Fetch SOL balance
+                const connection = new solanaWeb3.Connection(SOLANA_RPC_URL);
+                const publicKey = new solanaWeb3.PublicKey(appState.wallet);
+                const balance = await connection.getBalance(publicKey);
+                const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
+                
+                // Get SOL price from Jupiter
+                const solPrice = await fetchTokenPrice('So11111111111111111111111111111111111111112');
+                
+                // Simulate token holdings (in real app, fetch from wallet)
+                const mockTokens = await generateMockPortfolio(solBalance, solPrice);
+                
+                appState.portfolioData = mockTokens;
+                updatePortfolioStats();
+                renderTokenList();
+                updatePortfolioChart();
+                
+            } catch (error) {
+                console.error('Error loading portfolio:', error);
+                showNotification('Failed to load portfolio', 'error');
+            }
+        }
+
+        async function generateMockPortfolio(solBalance, solPrice) {
+            const tokens = [
+                { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', amount: solBalance },
+                { symbol: 'USDC', mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: 1250.50 },
+                { symbol: 'RAY', mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', amount: 45.2 },
+                { symbol: 'SRM', mint: 'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt', amount: 320.8 }
+            ];
+
+            const portfolioTokens = [];
+            
+            for (const token of tokens) {
+                const price = await fetchTokenPrice(token.mint);
+                const value = token.amount * price;
+                const change24h = (Math.random() - 0.5) * 20; // Random change -10% to +10%
+                
+                portfolioTokens.push({
+                    symbol: token.symbol,
+                    mint: token.mint,
+                    amount: token.amount,
+                    price: price,
+                    value: value,
+                    change24h: change24h
+                });
+            }
+            
+            return portfolioTokens;
+        }
+
+        async function fetchTokenPrice(mint) {
+            try {
+                const response = await fetch(`${JUPITER_API_URL}/price?ids=${mint}`);
+                const data = await response.json();
+                return data.data[mint]?.price || 0;
+            } catch (error) {
+                console.error('Error fetching price:', error);
+                return Math.random() * 100; // Fallback random price
+            }
+        }
+
+        async function loadTrendingTokens() {
+            try {
+                showLoading('trendingTokens');
+                
+                // Simulate trending tokens data
+                const trendingTokens = [
+                    { symbol: 'BONK', price: 0.000012, change: 15.2, volume: 2500000 },
+                    { symbol: 'ORCA', price: 3.45, change: 8.7, volume: 1800000 },
+                    { symbol: 'MNGO', price: 0.023, change: -2.1, volume: 950000 },
+                    { symbol: 'SAMO', price: 0.008, change: 12.3, volume: 750000 }
+                ];
+                
+                renderTrendingTokens(trendingTokens);
+            } catch (error) {
+                console.error('Error loading trending tokens:', error);
+            }
+        }
+
+        async function loadSentimentFeed() {
+            try {
+                showLoading('sentimentFeed');
+                
+                // Simulate sentiment posts
+                const posts = [
+                    {
+                        id: 1,
+                        author: 'CryptoWhale',
+                        token: 'SOL',
+                        sentiment: 'bullish',
+                        content: 'Strong technical indicators suggest SOL is ready for a breakout. Volume is increasing and resistance levels are being tested.',
+                        prediction: 250,
+                        timestamp: new Date(Date.now() - 3600000),
+                        upvotes: 24,
+                        downvotes: 3
+                    },
+                    {
+                        id: 2,
+                        author: 'DeFiAnalyst',
+                        token: 'RAY',
+                        sentiment: 'bearish',
+                        content: 'Market makers are pulling liquidity from RAY pools. This could signal a short-term decline.',
+                        prediction: null,
+                        timestamp: new Date(Date.now() - 7200000),
+                        upvotes: 12,
+                        downvotes: 8
+                    }
+                ];
+                
+                appState.sentimentPosts = posts;
+                renderSentimentFeed(posts);
+            } catch (error) {
+                console.error('Error loading sentiment feed:', error);
+            }
+        }
+
+        async function loadLeaderboard() {
+            try {
+                showLoading('leaderboard');
+                
+                // Simulate leaderboard data
+                const leaders = [
+                    { wallet: '7xKx...3mNp', username: 'SolanaWhale', followers: 1250, performance: 145.2 },
+                    { wallet: '9dF2...8kLm', username: 'DeFiKing', followers: 980, performance: 132.8 },
+                    { wallet: '5hB9...7nQr', username: 'TokenSniper', followers: 756, performance: 128.5 },
+                    { wallet: '3cV8...2pYt', username: 'CryptoSage', followers: 645, performance: 115.9 }
+                ];
+                
+                renderLeaderboard(leaders);
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+            }
+        }
+
+        async function loadTopTraders() {
+            try {
+                showLoading('tradersList');
+                
+                // Simulate top traders data
+                const traders = [
+                    {
+                        wallet: '7xKx...3mNp',
+                        username: 'SolanaWhale',
+                        pnl24h: 12.5,
+                        winRate: 78,
+                        avgTrade: 2.3,
+                        followers: 1250,
+                        tradingStyle: 'Swing Trader'
+                    },
+                    {
+                        wallet: '9dF2...8kLm',
+                        username: 'DeFiKing',
+                        pnl24h: 8.9,
+                        winRate: 65,
+                        avgTrade: 5.1,
+                        followers: 980,
+                        tradingStyle: 'HFT'
+                    }
+                ];
+                
+                renderTopTraders(traders);
+            } catch (error) {
+                console.error('Error loading top traders:', error);
+            }
+        }
+
+        // UI Rendering Functions
+        function updatePortfolioStats() {
+            const totalValue = appState.portfolioData.reduce((sum, token) => sum + token.value, 0);
+            const totalChange = appState.portfolioData.reduce((sum, token) => sum + (token.value * token.change24h / 100), 0);
+            const changePercent = (totalChange / totalValue) * 100;
+            
+            document.getElementById('totalValue').textContent = `${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('totalChange').textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+            document.getElementById('totalChange').className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+            
+            const solToken = appState.portfolioData.find(t => t.symbol === 'SOL');
+            if (solToken) {
+                document.getElementById('solValue').textContent = `${solToken.amount.toFixed(2)} SOL`;
+                document.getElementById('solChange').textContent = `${solToken.change24h >= 0 ? '+' : ''}${solToken.change24h.toFixed(2)}%`;
+                document.getElementById('solChange').className = `stat-change ${solToken.change24h >= 0 ? 'positive' : 'negative'}`;
+                
+                // Update wallet balance display
+                document.getElementById('solBalance').textContent = `${solToken.amount.toFixed(2)} SOL`;
+            }
+            
+            document.getElementById('tokenCount').textContent = appState.portfolioData.length;
+            document.getElementById('pnlValue').textContent = `${totalChange.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            document.getElementById('pnlChange').textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+            document.getElementById('pnlChange').className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+        }
+
+        function renderTokenList() {
+            const tokenList = document.getElementById('tokenList');
+            tokenList.innerHTML = '';
+            
+            appState.portfolioData.forEach(token => {
+                const tokenItem = document.createElement('div');
+                tokenItem.className = 'token-item';
+                tokenItem.innerHTML = `
+                    <div class="token-info">
+                        <div class="token-icon">${token.symbol.charAt(0)}</div>
+                        <div class="token-details">
+                            <h4>${token.symbol}</h4>
+                            <span>${token.amount.toLocaleString(undefined, {maximumFractionDigits: 6})} tokens</span>
+                        </div>
+                    </div>
+                    <div class="token-stats">
+                        <div class="token-price">${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
+                        <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
+                            ${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%
+                        </div>
+                        <div style="color: #888; font-size: 0.8rem; margin-top: 0.2rem;">
+                            ${token.value.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </div>
+                    </div>
+                `;
+                tokenList.appendChild(tokenItem);
+            });
+        }
+
+        function renderTrendingTokens(tokens) {
+            const container = document.getElementById('trendingTokens');
+            container.innerHTML = '';
+            
+            tokens.forEach(token => {
+                const tokenItem = document.createElement('div');
+                tokenItem.className = 'token-item';
+                tokenItem.innerHTML = `
+                    <div class="token-info">
+                        <div class="token-icon">${token.symbol.charAt(0)}</div>
+                        <div class="token-details">
+                            <h4>${token.symbol}</h4>
+                            <span>Vol: ${(token.volume / 1000000).toFixed(1)}M</span>
+                        </div>
+                    </div>
+                    <div class="token-stats">
+                        <div class="token-price">${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
+                        <div class="token-change ${token.change >= 0 ? 'positive' : 'negative'}">
+                            ${token.change >= 0 ? '+' : ''}${token.change.toFixed(1)}%
+                        </div>
+                    </div>
+                `;
+                container.appendChild(tokenItem);
+            });
+        }
+
+        function renderSentimentFeed(posts) {
+            const feed = document.getElementById('sentimentFeed');
+            feed.innerHTML = '';
+            
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'social-item';
+                
+                const sentimentEmoji = post.sentiment === 'bullish' ? '🐂' : post.sentiment === 'bearish' ? '🐻' : '😐';
+                const timeAgo = getTimeAgo(post.timestamp);
+                
+                postElement.innerHTML = `
+                    <div class="user-avatar">${post.author.charAt(0)}</div>
+                    <div class="social-content">
+                        <div class="social-header">
+                            <span class="username">${post.author}</span>
+                            <span style="color: #888;">•</span>
+                            <span style="color: #ff6b6b; font-weight: 600;">${post.token}</span>
+                            <span style="color: #888;">•</span>
+                            <span>${sentimentEmoji}</span>
+                            <span class="timestamp">${timeAgo}</span>
+                        </div>
+                        <p style="margin: 0.5rem 0; line-height: 1.5;">${post.content}</p>
+                        ${post.prediction ? `<div style="color: #4ecdc4; font-weight: 600; margin: 0.5rem 0;">
+                            Price Target: ${post.prediction}
+                        </div>` : ''}
+                        <div class="social-stats">
+                            <div class="social-stat">
+                                <i class="fas fa-thumbs-up"></i>
+                                <span>${post.upvotes}</span>
+                            </div>
+                            <div class="social-stat">
+                                <i class="fas fa-thumbs-down"></i>
+                                <span>${post.downvotes}</span>
+                            </div>
+                            <div class="social-stat">
+                                <i class="fas fa-share"></i>
+                                <span>Share</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                feed.appendChild(postElement);
+            });
+        }
+
+        function renderLeaderboard(leaders) {
+            const leaderboard = document.getElementById('leaderboard');
+            leaderboard.innerHTML = '';
+            
+            leaders.forEach((leader, index) => {
+                const leaderItem = document.createElement('div');
+                leaderItem.className = 'social-item';
+                leaderItem.innerHTML = `
+                    <div class="user-avatar">${index + 1}</div>
+                    <div class="social-content">
+                        <div class="social-header">
+                            <span class="username">${leader.username}</span>
+                            ${index < 3 ? `<span class="achievement-badge">TOP ${index + 1}</span>` : ''}
+                        </div>
+                        <div style="color: #888; font-size: 0.9rem;">${leader.wallet}</div>
+                        <div class="social-stats">
+                            <div class="social-stat">
+                                <i class="fas fa-users"></i>
+                                <span>${leader.followers} followers</span>
+                            </div>
+                            <div class="social-stat">
+                                <i class="fas fa-chart-line"></i>
+                                <span class="positive">+${leader.performance}%</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-small">Follow</button>
+                `;
+                leaderboard.appendChild(leaderItem);
+            });
+        }
+
+        function renderTopTraders(traders) {
+            const container = document.getElementById('tradersList');
+            container.innerHTML = '';
+            
+            traders.forEach(trader => {
+                const traderItem = document.createElement('div');
+                traderItem.className = 'social-item';
+                traderItem.innerHTML = `
+                    <div class="user-avatar">${trader.username.charAt(0)}</div>
+                    <div class="social-content">
+                        <div class="social-header">
+                            <span class="username">${trader.username}</span>
+                            <span style="color: #888;">•</span>
+                            <span style="color: #4ecdc4; font-size: 0.8rem;">${trader.tradingStyle}</span>
+                        </div>
+                        <div style="color: #888; font-size: 0.9rem; margin: 0.3rem 0;">${trader.wallet}</div>
+                        <div class="social-stats">
+                            <div class="social-stat">
+                                <i class="fas fa-chart-line"></i>
+                                <span class="positive">+${trader.pnl24h}% (24h)</span>
+                            </div>
+                            <div class="social-stat">
+                                <i class="fas fa-target"></i>
+                                <span>${trader.winRate}% win rate</span>
+                            </div>
+                            <div class="social-stat">
+                                <i class="fas fa-users"></i>
+                                <span>${trader.followers} followers</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="btn btn-secondary btn-small">Follow</button>
+                        <button class="btn btn-primary btn-small">Copy</button>
+                    </div>
+                `;
+                container.appendChild(traderItem);
+            });
+        }
+
+        // Chart Functions
+        let portfolioChart = null;
+
+        function updatePortfolioChart() {
+            const ctx = document.getElementById('portfolioChart').getContext('2d');
+            const timeframe = document.getElementById('chartTimeframe').value;
+            
+            // Generate mock historical data
+            const data = generateChartData(timeframe);
+            
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+            
+            portfolioChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: data.values,
+                        borderColor: '#ff6b6b',
+                        backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#888'
+                            }
+                        },
+                        y: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#888',
+                                callback: function(value) {
+                                    return ' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function generateChartData(timeframe) {
+            const now = new Date();
+            const labels = [];
+            const values = [];
+            let baseValue = 10000;
+            
+            let points, interval;
+            switch (timeframe) {
+                case '24h':
+                    points = 24;
+                    interval = 60 * 60 * 1000; // 1 hour
+                    break;
+                case '7d':
+                    points = 7;
+                    interval = 24 * 60 * 60 * 1000; // 1 day
+                    break;
+                case '30d':
+                    points = 30;
+                    interval = 24 * 60 * 60 * 1000; // 1 day
+                    break;
+                case '1y':
+                    points = 12;
+                    interval = 30 * 24 * 60 * 60 * 1000; // 1 month
+                    break;
+            }
+            
+            for (let i = points; i >= 0; i--) {
+                const date = new Date(now.getTime() - (i * interval));
+                labels.push(formatChartLabel(date, timeframe));
+                
+                // Generate realistic price movement
+                const change = (Math.random() - 0.5) * 0.1; // ±5% max change
+                baseValue += baseValue * change;
+                values.push(baseValue);
+            }
+            
+            return { labels, values };
+        }
+
+        function formatChartLabel(date, timeframe) {
+            switch (timeframe) {
+                case '24h':
+                    return date.getHours() + ':00';
+                case '7d':
+                case '30d':
+                    return (date.getMonth() + 1) + '/' + date.getDate();
+                case '1y':
+                    return date.toLocaleDateString('en', { month: 'short' });
+                default:
+                    return date.toLocaleDateString();
+            }
+        }
+
+        // Modal Functions
+        function openAlertModal() {
+            populateTokenSelect('alertToken');
+            document.getElementById('alertModal').classList.add('active');
+        }
+
+        function openCopyTradeModal() {
+            document.getElementById('copyTradeModal').classList.add('active');
+        }
+
+        function openFollowModal() {
+            document.getElementById('followModal').classList.add('active');
+        }
+
+        function openSentimentModal() {
+            populateTokenSelect('sentimentToken');
+            document.getElementById('sentimentModal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function populateTokenSelect(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">Select a token</option>';
+            
+            appState.portfolioData.forEach(token => {
+                const option = document.createElement('option');
+                option.value = token.mint;
+                option.textContent = `${token.symbol} - ${token.price.toFixed(6)}`;
+                select.appendChild(option);
+            });
+        }
+
+        // Form Handlers
+        async function createAlert(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const alertData = {
+                token: document.getElementById('alertToken').value,
+                type: document.getElementById('alertType').value,
+                price: parseFloat(document.getElementById('alertPrice').value),
+                message: document.getElementById('alertMessage').value || 'Price alert triggered'
+            };
+            
+            // In real implementation, this would call the smart contract
+            appState.alerts.push({
+                id: Date.now(),
+                ...alertData,
+                active: true,
+                created: new Date()
+            });
+            
+            closeModal('alertModal');
+            showNotification('Price alert created successfully!', 'success');
+            e.target.reset();
+        }
+
+        async function createCopyTrade(e) {
+            e.preventDefault();
+            
+            const copyTradeData = {
+                targetWallet: document.getElementById('targetWallet').value,
+                maxAmount: parseFloat(document.getElementById('maxAmount').value),
+                stopLoss: parseInt(document.getElementById('stopLoss').value),
+                takeProfit: parseInt(document.getElementById('takeProfit').value)
+            };
+            
+            // Validate wallet address format
+            if (copyTradeData.targetWallet.length < 32) {
+                showNotification('Invalid wallet address', 'error');
+                return;
+            }
+            
+            // In real implementation, this would call the smart contract
+            closeModal('copyTradeModal');
+            showNotification('Copy trade setup successfully!', 'success');
+            e.target.reset();
+        }
+
+        async function followWallet(e) {
+            e.preventDefault();
+            
+            const walletData = {
+                address: document.getElementById('followWallet').value,
+                nickname: document.getElementById('walletNickname').value || 'Unknown Trader'
+            };
+            
+            appState.followedWallets.push({
+                id: Date.now(),
+                ...walletData,
+                followed: new Date()
+            });
+            
+            closeModal('followModal');
+            showNotification(`Now following ${walletData.nickname}!`, 'success');
+            e.target.reset();
+        }
+
+        async function createSentimentPost(e) {
+            e.preventDefault();
+            
+            const postData = {
+                token: document.getElementById('sentimentToken').value,
+                sentiment: document.getElementById('sentimentType').value,
+                content: document.getElementById('sentimentContent').value,
+                prediction: document.getElementById('pricePrediction').value ? 
+                    parseFloat(document.getElementById('pricePrediction').value) : null
+            };
+            
+            const newPost = {
+                id: Date.now(),
+                author: appState.userAccount?.username || 'Anonymous',
+                timestamp: new Date(),
+                upvotes: 0,
+                downvotes: 0,
+                ...postData
+            };
+            
+            appState.sentimentPosts.unshift(newPost);
+            renderSentimentFeed(appState.sentimentPosts);
+            
+            closeModal('sentimentModal');
+            showNotification('Sentiment posted successfully!', 'success');
+            e.target.reset();
+        }
+
+        // Utility Functions
+        function switchSection(sectionName) {
+            // Update navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
+            
+            // Update content
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionName).classList.add('active');
+        }
+
+        function showLoading(containerId) {
+            document.getElementById(containerId).innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                </div>
+            `;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            
+            let interval = seconds / 31536000;
+            if (interval > 1) return Math.floor(interval) + "y ago";
+            
+            interval = seconds / 2592000;
+            if (interval > 1) return Math.floor(interval) + "mo ago";
+            
+            interval = seconds / 86400;
+            if (interval > 1) return Math.floor(interval) + "d ago";
+            
+            interval = seconds / 3600;
+            if (interval > 1) return Math.floor(interval) + "h ago";
+            
+            interval = seconds / 60;
+            if (interval > 1) return Math.floor(interval) + "m ago";
+            
+            return Math.floor(seconds) + "s ago";
+        }
+
+        async function refreshPortfolio() {
+            if (appState.connected) {
+                await loadUserPortfolio();
+                showNotification('Portfolio refreshed!', 'success');
+            }
+        }
+
+        function startDataRefreshInterval() {
+            // Refresh data every 30 seconds
+            setInterval(async () => {
+                if (appState.connected) {
+                    await loadUserPortfolio();
+                }
+                await loadTrendingTokens();
+            }, 30000);
+        }
+
+        // Click outside modal to close
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>
