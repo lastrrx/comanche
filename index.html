@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cypher - Portfolio Analytics</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
-    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -309,90 +307,6 @@
             font-weight: 500;
         }
 
-        /* Alerts */
-        .alert-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            border-left: 4px solid #ff6b6b;
-        }
-
-        .alert-active {
-            border-left-color: #4ecdc4;
-        }
-
-        .alert-triggered {
-            border-left-color: #ffa500;
-            opacity: 0.7;
-        }
-
-        /* Social Features */
-        .social-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .social-item:hover {
-            background: rgba(255, 255, 255, 0.07);
-        }
-
-        .user-avatar {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            color: white;
-        }
-
-        .social-content {
-            flex: 1;
-        }
-
-        .social-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .username {
-            font-weight: 600;
-            color: #ffffff;
-        }
-
-        .timestamp {
-            color: #888;
-            font-size: 0.8rem;
-        }
-
-        .social-stats {
-            display: flex;
-            gap: 1rem;
-            margin-top: 0.5rem;
-        }
-
-        .social-stat {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-            color: #888;
-            font-size: 0.8rem;
-        }
-
         /* Buttons */
         .btn {
             padding: 0.75rem 1.5rem;
@@ -429,98 +343,6 @@
             font-size: 0.8rem;
         }
 
-        /* Forms */
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: #ffffff;
-        }
-
-        .form-input {
-            width: 100%;
-            padding: 1rem;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            font-size: 1rem;
-        }
-
-        .form-input:focus {
-            outline: none;
-            border-color: #ff6b6b;
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
-        }
-
-        .form-select {
-            width: 100%;
-            padding: 1rem;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            font-size: 1rem;
-        }
-
-        /* Modal */
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            backdrop-filter: blur(10px);
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: rgba(10, 10, 10, 0.95);
-            border-radius: 20px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-
-        .modal-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 1.5rem;
-            cursor: pointer;
-            padding: 0.5rem;
-        }
-
-        .close-btn:hover {
-            color: #ffffff;
-        }
-
         /* Loading */
         .loading {
             display: flex;
@@ -543,16 +365,41 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Achievement Badge */
-        .achievement-badge {
-            display: inline-block;
-            padding: 0.3rem 0.8rem;
-            background: linear-gradient(45deg, #ffd700, #ffa500);
-            color: #000;
-            border-radius: 20px;
-            font-size: 0.7rem;
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
             font-weight: 600;
-            margin-left: 0.5rem;
+            z-index: 1500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .coming-soon {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #888;
+        }
+
+        .coming-soon i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: #ff6b6b;
+        }
+
+        .coming-soon h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #ffffff;
         }
 
         /* Responsive */
@@ -598,58 +445,6 @@
                 text-align: left;
                 width: 100%;
             }
-
-            .modal-content {
-                margin: 1rem;
-                padding: 1.5rem;
-            }
-        }
-
-        /* Animations */
-        .pulse {
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.7; }
-            100% { opacity: 1; }
-        }
-
-        .notification {
-            position: fixed;
-            top: 100px;
-            right: 1rem;
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 600;
-            z-index: 1500;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .coming-soon {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #888;
-        }
-
-        .coming-soon i {
-            font-size: 3rem;
-            margin-bottom: 1rem;
-            color: #ff6b6b;
-        }
-
-        .coming-soon h3 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            color: #ffffff;
         }
     </style>
 </head>
@@ -737,14 +532,6 @@
                             <h3 class="card-title">Portfolio Performance</h3>
                             <p class="card-subtitle">Real-time portfolio tracking</p>
                         </div>
-                        <div>
-                            <select id="chartTimeframe" class="form-select" style="width: auto; padding: 0.5rem;">
-                                <option value="24h">24H</option>
-                                <option value="7d">7D</option>
-                                <option value="30d">30D</option>
-                                <option value="1y">1Y</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="portfolioChart"></canvas>
@@ -773,7 +560,7 @@
                         <h3 class="card-title">Top Performing Traders</h3>
                         <p class="card-subtitle">Similar token holders analysis</p>
                     </div>
-                    <div id="tradersList" class="social-item">
+                    <div id="tradersList">
                         <div class="loading">
                             <div class="spinner"></div>
                         </div>
@@ -800,7 +587,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Price Alerts</h3>
-                        <button class="btn btn-primary btn-small" onclick="openAlertModal()">
+                        <button class="btn btn-primary btn-small" onclick="createNewAlert()">
                             <i class="fas fa-plus"></i> New Alert
                         </button>
                     </div>
@@ -831,15 +618,6 @@
                         <h3 class="card-title">Whale Activity</h3>
                         <p class="card-subtitle">Large transactions for your tokens</p>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Alert Threshold</label>
-                        <select id="whaleThreshold" class="form-select">
-                            <option value="20">20 SOL</option>
-                            <option value="50" selected>50 SOL</option>
-                            <option value="100">100 SOL</option>
-                            <option value="custom">Custom Amount</option>
-                        </select>
-                    </div>
                     <div id="whaleActivity">
                         <p style="color: #888; text-align: center; padding: 2rem;">
                             No whale activity detected in the last 24 hours.
@@ -850,7 +628,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Followed Wallets</h3>
-                        <button class="btn btn-primary btn-small" onclick="openFollowModal()">
+                        <button class="btn btn-primary btn-small" onclick="followNewWallet()">
                             <i class="fas fa-plus"></i> Follow Wallet
                         </button>
                     </div>
@@ -867,7 +645,7 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Sentiment Forum</h3>
-                        <button class="btn btn-primary btn-small" onclick="openSentimentModal()">
+                        <button class="btn btn-primary btn-small" onclick="createNewPost()">
                             <i class="fas fa-plus"></i> New Post
                         </button>
                     </div>
@@ -897,7 +675,7 @@
                     <i class="fas fa-trophy"></i>
                     <h3>WalletWars Tournaments</h3>
                     <p>Epic portfolio battles coming soon! Compete with other traders in real-time tournaments.</p>
-                    <button class="btn btn-secondary" style="margin-top: 1rem;">
+                    <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="notifyWhenReady()">
                         <i class="fas fa-envelope"></i> Notify Me
                     </button>
                 </div>
@@ -905,430 +683,319 @@
         </main>
     </div>
 
-    <!-- Modals -->
-    <!-- Alert Modal -->
-    <div id="alertModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Create Price Alert</h3>
-                <button class="close-btn" onclick="closeModal('alertModal')">&times;</button>
-            </div>
-            <form id="alertForm">
-                <div class="form-group">
-                    <label class="form-label">Token</label>
-                    <select id="alertToken" class="form-select" required>
-                        <option value="">Select a token</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Alert Type</label>
-                    <select id="alertType" class="form-select" required>
-                        <option value="above">Price Above</option>
-                        <option value="below">Price Below</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Price Threshold ($)</label>
-                    <input type="number" id="alertPrice" class="form-input" step="0.000001" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Message (Optional)</label>
-                    <input type="text" id="alertMessage" class="form-input" placeholder="Custom alert message">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    Create Alert
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Copy Trade Modal -->
-    <div id="copyTradeModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Setup Copy Trading</h3>
-                <button class="close-btn" onclick="closeModal('copyTradeModal')">&times;</button>
-            </div>
-            <form id="copyTradeForm">
-                <div class="form-group">
-                    <label class="form-label">Target Wallet</label>
-                    <input type="text" id="targetWallet" class="form-input" placeholder="Wallet address to copy" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Max Amount per Trade (SOL)</label>
-                    <input type="number" id="maxAmount" class="form-input" min="0.1" max="5" step="0.1" value="1" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Stop Loss (%)</label>
-                    <input type="number" id="stopLoss" class="form-input" min="5" max="50" value="20" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Take Profit (%)</label>
-                    <input type="number" id="takeProfit" class="form-input" min="10" max="500" value="50" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    Start Copy Trading
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Follow Wallet Modal -->
-    <div id="followModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Follow Wallet</h3>
-                <button class="close-btn" onclick="closeModal('followModal')">&times;</button>
-            </div>
-            <form id="followForm">
-                <div class="form-group">
-                    <label class="form-label">Wallet Address</label>
-                    <input type="text" id="followWallet" class="form-input" placeholder="Enter wallet address" required>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Nickname (Optional)</label>
-                    <input type="text" id="walletNickname" class="form-input" placeholder="Give this wallet a nickname">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    Follow Wallet
-                </button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Sentiment Post Modal -->
-    <div id="sentimentModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Share Sentiment</h3>
-                <button class="close-btn" onclick="closeModal('sentimentModal')">&times;</button>
-            </div>
-            <form id="sentimentForm">
-                <div class="form-group">
-                    <label class="form-label">Token</label>
-                    <select id="sentimentToken" class="form-select" required>
-                        <option value="">Select a token</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Sentiment</label>
-                    <select id="sentimentType" class="form-select" required>
-                        <option value="bullish">🐂 Bullish</option>
-                        <option value="bearish">🐻 Bearish</option>
-                        <option value="neutral">😐 Neutral</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Your Thoughts</label>
-                    <textarea id="sentimentContent" class="form-input" rows="4" placeholder="Share your analysis..." required></textarea>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Price Prediction ($) - Optional</label>
-                    <input type="number" id="pricePrediction" class="form-input" step="0.000001" placeholder="Your price target">
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%;">
-                    Post Sentiment
-                </button>
-            </form>
-        </div>
-    </div>
-
     <!-- Notification -->
     <div id="notification" class="notification"></div>
 
     <script>
+        // Debug console
+        console.log('Cypher dApp initializing...');
+
         // Application State
         const appState = {
             connected: false,
             wallet: null,
-            connection: null,
-            userAccount: null,
             portfolioData: [],
-            priceData: {},
             alerts: [],
             followedWallets: [],
-            sentimentPosts: []
+            sentimentPosts: [],
+            userAccount: null
         };
 
-        // Jupiter API Configuration
-        const JUPITER_API_URL = 'https://price.jup.ag/v4';
-        const SOLANA_RPC_URL = 'https://api.devnet.solana.com';
-
         // Initialize Application
-        document.addEventListener('DOMContentLoaded', async () => {
-            initializeEventListeners();
-            await loadInitialData();
-            startDataRefreshInterval();
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, setting up event listeners...');
+            try {
+                initializeEventListeners();
+                loadInitialData();
+                startDataRefreshInterval();
+                console.log('App initialized successfully');
+            } catch (error) {
+                console.error('Error initializing app:', error);
+            }
         });
 
         function initializeEventListeners() {
-            // Navigation
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', () => switchSection(tab.dataset.section));
+            console.log('Setting up event listeners...');
+            
+            // Navigation tabs
+            const navTabs = document.querySelectorAll('.nav-tab');
+            navTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    console.log('Tab clicked:', tab.dataset.section);
+                    switchSection(tab.dataset.section);
+                });
             });
 
-            // Wallet Connection
-            document.getElementById('connectWallet').addEventListener('click', connectWallet);
+            // Wallet connection
+            const connectBtn = document.getElementById('connectWallet');
+            if (connectBtn) {
+                connectBtn.addEventListener('click', connectWallet);
+                console.log('Wallet button listener added');
+            }
+        }
 
-            // Forms
-            document.getElementById('alertForm').addEventListener('submit', createAlert);
-            document.getElementById('copyTradeForm').addEventListener('submit', createCopyTrade);
-            document.getElementById('followForm').addEventListener('submit', followWallet);
-            document.getElementById('sentimentForm').addEventListener('submit', createSentimentPost);
-
-            // Chart timeframe
-            document.getElementById('chartTimeframe').addEventListener('change', updatePortfolioChart);
+        // Section switching
+        function switchSection(sectionName) {
+            console.log('Switching to section:', sectionName);
+            
+            // Update navigation
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const activeTab = document.querySelector(`[data-section="${sectionName}"]`);
+            if (activeTab) {
+                activeTab.classList.add('active');
+            }
+            
+            // Update content
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            const activeSection = document.getElementById(sectionName);
+            if (activeSection) {
+                activeSection.classList.add('active');
+            }
         }
 
         // Wallet Connection
         async function connectWallet() {
+            console.log('Attempting to connect wallet...');
+            
             try {
-                if (typeof window.solana !== 'undefined') {
+                // Check if Phantom wallet is available
+                if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
+                    console.log('Phantom wallet detected');
                     const response = await window.solana.connect();
                     appState.wallet = response.publicKey.toString();
                     appState.connected = true;
                     
-                    // Update UI
-                    document.getElementById('connectWallet').style.display = 'none';
-                    document.getElementById('walletInfo').style.display = 'flex';
-                    document.getElementById('walletAddress').textContent = 
-                        appState.wallet.slice(0, 4) + '...' + appState.wallet.slice(-4);
-                    
-                    // Initialize user account and load data
-                    await initializeUserAccount();
+                    console.log('Wallet connected:', appState.wallet);
+                    updateWalletUI();
                     await loadUserPortfolio();
+                    showNotification('Wallet connected successfully!');
                     
-                    showNotification('Wallet connected successfully!', 'success');
+                } else if (typeof window.solflare !== 'undefined') {
+                    console.log('Solflare wallet detected');
+                    await window.solflare.connect();
+                    appState.wallet = window.solflare.publicKey.toString();
+                    appState.connected = true;
+                    
+                    updateWalletUI();
+                    await loadUserPortfolio();
+                    showNotification('Wallet connected successfully!');
+                    
                 } else {
-                    showNotification('Please install Phantom wallet', 'error');
+                    console.log('No Solana wallet detected');
+                    showNotification('Please install Phantom or Solflare wallet');
+                    // Simulate connection for demo
+                    simulateWalletConnection();
                 }
             } catch (error) {
                 console.error('Error connecting wallet:', error);
-                showNotification('Failed to connect wallet', 'error');
+                showNotification('Failed to connect wallet');
+                // Simulate connection for demo
+                simulateWalletConnection();
             }
         }
 
-        async function initializeUserAccount() {
-            // In a real implementation, this would interact with the Solana program
-            // For now, we'll simulate it
-            appState.userAccount = {
-                authority: appState.wallet,
-                username: `trader_${appState.wallet.slice(0, 8)}`,
-                totalPnl: 0,
-                followersCount: 0,
-                followingCount: 0
-            };
+        function simulateWalletConnection() {
+            console.log('Simulating wallet connection for demo...');
+            appState.wallet = 'Demo' + Math.random().toString(36).substr(2, 9);
+            appState.connected = true;
+            updateWalletUI();
+            loadUserPortfolio();
+            showNotification('Demo wallet connected!');
         }
 
-        // Data Loading
+        function updateWalletUI() {
+            const connectBtn = document.getElementById('connectWallet');
+            const walletInfo = document.getElementById('walletInfo');
+            const walletAddress = document.getElementById('walletAddress');
+            
+            if (connectBtn) connectBtn.style.display = 'none';
+            if (walletInfo) walletInfo.style.display = 'flex';
+            if (walletAddress) {
+                walletAddress.textContent = 
+                    appState.wallet.slice(0, 4) + '...' + appState.wallet.slice(-4);
+            }
+        }
+
+        // Data Loading Functions
         async function loadInitialData() {
-            await loadTrendingTokens();
-            await loadSentimentFeed();
-            await loadLeaderboard();
-            await loadTopTraders();
+            console.log('Loading initial data...');
+            try {
+                await loadTrendingTokens();
+                await loadSentimentFeed();
+                await loadLeaderboard();
+                await loadTopTraders();
+                console.log('Initial data loaded');
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+            }
         }
 
         async function loadUserPortfolio() {
-            if (!appState.connected) return;
+            if (!appState.connected) {
+                console.log('Wallet not connected, skipping portfolio load');
+                return;
+            }
 
+            console.log('Loading user portfolio...');
+            
             try {
-                showLoading('tokenList');
-                
-                // Fetch SOL balance
-                const connection = new solanaWeb3.Connection(SOLANA_RPC_URL);
-                const publicKey = new solanaWeb3.PublicKey(appState.wallet);
-                const balance = await connection.getBalance(publicKey);
-                const solBalance = balance / solanaWeb3.LAMPORTS_PER_SOL;
-                
-                // Get SOL price from Jupiter
-                const solPrice = await fetchTokenPrice('So11111111111111111111111111111111111111112');
-                
-                // Simulate token holdings (in real app, fetch from wallet)
-                const mockTokens = await generateMockPortfolio(solBalance, solPrice);
-                
+                // Generate mock portfolio data
+                const mockTokens = [
+                    { symbol: 'SOL', amount: 5.234, price: 98.45, change24h: 3.2 },
+                    { symbol: 'USDC', amount: 1250.50, price: 1.00, change24h: 0.1 },
+                    { symbol: 'RAY', amount: 45.2, price: 2.34, change24h: -1.8 },
+                    { symbol: 'SRM', amount: 320.8, price: 0.67, change24h: 5.4 }
+                ];
+
+                // Calculate values
+                mockTokens.forEach(token => {
+                    token.value = token.amount * token.price;
+                });
+
                 appState.portfolioData = mockTokens;
                 updatePortfolioStats();
                 renderTokenList();
                 updatePortfolioChart();
                 
+                console.log('Portfolio loaded successfully');
             } catch (error) {
                 console.error('Error loading portfolio:', error);
-                showNotification('Failed to load portfolio', 'error');
-            }
-        }
-
-        async function generateMockPortfolio(solBalance, solPrice) {
-            const tokens = [
-                { symbol: 'SOL', mint: 'So11111111111111111111111111111111111111112', amount: solBalance },
-                { symbol: 'USDC', mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', amount: 1250.50 },
-                { symbol: 'RAY', mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R', amount: 45.2 },
-                { symbol: 'SRM', mint: 'SRMuApVNdxXokk5GT7XD5cUUgXMBCoAz2LHeuAoKWRt', amount: 320.8 }
-            ];
-
-            const portfolioTokens = [];
-            
-            for (const token of tokens) {
-                const price = await fetchTokenPrice(token.mint);
-                const value = token.amount * price;
-                const change24h = (Math.random() - 0.5) * 20; // Random change -10% to +10%
-                
-                portfolioTokens.push({
-                    symbol: token.symbol,
-                    mint: token.mint,
-                    amount: token.amount,
-                    price: price,
-                    value: value,
-                    change24h: change24h
-                });
-            }
-            
-            return portfolioTokens;
-        }
-
-        async function fetchTokenPrice(mint) {
-            try {
-                const response = await fetch(`${JUPITER_API_URL}/price?ids=${mint}`);
-                const data = await response.json();
-                return data.data[mint]?.price || 0;
-            } catch (error) {
-                console.error('Error fetching price:', error);
-                return Math.random() * 100; // Fallback random price
+                showNotification('Failed to load portfolio');
             }
         }
 
         async function loadTrendingTokens() {
-            try {
-                showLoading('trendingTokens');
-                
-                // Simulate trending tokens data
-                const trendingTokens = [
-                    { symbol: 'BONK', price: 0.000012, change: 15.2, volume: 2500000 },
-                    { symbol: 'ORCA', price: 3.45, change: 8.7, volume: 1800000 },
-                    { symbol: 'MNGO', price: 0.023, change: -2.1, volume: 950000 },
-                    { symbol: 'SAMO', price: 0.008, change: 12.3, volume: 750000 }
-                ];
-                
-                renderTrendingTokens(trendingTokens);
-            } catch (error) {
-                console.error('Error loading trending tokens:', error);
-            }
+            console.log('Loading trending tokens...');
+            
+            const trendingTokens = [
+                { symbol: 'BONK', price: 0.000012, change: 15.2, volume: 2500000 },
+                { symbol: 'ORCA', price: 3.45, change: 8.7, volume: 1800000 },
+                { symbol: 'MNGO', price: 0.023, change: -2.1, volume: 950000 },
+                { symbol: 'SAMO', price: 0.008, change: 12.3, volume: 750000 }
+            ];
+            
+            renderTrendingTokens(trendingTokens);
         }
 
         async function loadSentimentFeed() {
-            try {
-                showLoading('sentimentFeed');
-                
-                // Simulate sentiment posts
-                const posts = [
-                    {
-                        id: 1,
-                        author: 'CryptoWhale',
-                        token: 'SOL',
-                        sentiment: 'bullish',
-                        content: 'Strong technical indicators suggest SOL is ready for a breakout. Volume is increasing and resistance levels are being tested.',
-                        prediction: 250,
-                        timestamp: new Date(Date.now() - 3600000),
-                        upvotes: 24,
-                        downvotes: 3
-                    },
-                    {
-                        id: 2,
-                        author: 'DeFiAnalyst',
-                        token: 'RAY',
-                        sentiment: 'bearish',
-                        content: 'Market makers are pulling liquidity from RAY pools. This could signal a short-term decline.',
-                        prediction: null,
-                        timestamp: new Date(Date.now() - 7200000),
-                        upvotes: 12,
-                        downvotes: 8
-                    }
-                ];
-                
-                appState.sentimentPosts = posts;
-                renderSentimentFeed(posts);
-            } catch (error) {
-                console.error('Error loading sentiment feed:', error);
-            }
+            console.log('Loading sentiment feed...');
+            
+            const posts = [
+                {
+                    id: 1,
+                    author: 'CryptoWhale',
+                    token: 'SOL',
+                    sentiment: 'bullish',
+                    content: 'Strong technical indicators suggest SOL is ready for a breakout. Volume is increasing and resistance levels are being tested.',
+                    prediction: 250,
+                    timestamp: new Date(Date.now() - 3600000),
+                    upvotes: 24,
+                    downvotes: 3
+                },
+                {
+                    id: 2,
+                    author: 'DeFiAnalyst',
+                    token: 'RAY',
+                    sentiment: 'bearish',
+                    content: 'Market makers are pulling liquidity from RAY pools. This could signal a short-term decline.',
+                    prediction: null,
+                    timestamp: new Date(Date.now() - 7200000),
+                    upvotes: 12,
+                    downvotes: 8
+                }
+            ];
+            
+            appState.sentimentPosts = posts;
+            renderSentimentFeed(posts);
         }
 
         async function loadLeaderboard() {
-            try {
-                showLoading('leaderboard');
-                
-                // Simulate leaderboard data
-                const leaders = [
-                    { wallet: '7xKx...3mNp', username: 'SolanaWhale', followers: 1250, performance: 145.2 },
-                    { wallet: '9dF2...8kLm', username: 'DeFiKing', followers: 980, performance: 132.8 },
-                    { wallet: '5hB9...7nQr', username: 'TokenSniper', followers: 756, performance: 128.5 },
-                    { wallet: '3cV8...2pYt', username: 'CryptoSage', followers: 645, performance: 115.9 }
-                ];
-                
-                renderLeaderboard(leaders);
-            } catch (error) {
-                console.error('Error loading leaderboard:', error);
-            }
+            console.log('Loading leaderboard...');
+            
+            const leaders = [
+                { wallet: '7xKx...3mNp', username: 'SolanaWhale', followers: 1250, performance: 145.2 },
+                { wallet: '9dF2...8kLm', username: 'DeFiKing', followers: 980, performance: 132.8 },
+                { wallet: '5hB9...7nQr', username: 'TokenSniper', followers: 756, performance: 128.5 },
+                { wallet: '3cV8...2pYt', username: 'CryptoSage', followers: 645, performance: 115.9 }
+            ];
+            
+            renderLeaderboard(leaders);
         }
 
         async function loadTopTraders() {
-            try {
-                showLoading('tradersList');
-                
-                // Simulate top traders data
-                const traders = [
-                    {
-                        wallet: '7xKx...3mNp',
-                        username: 'SolanaWhale',
-                        pnl24h: 12.5,
-                        winRate: 78,
-                        avgTrade: 2.3,
-                        followers: 1250,
-                        tradingStyle: 'Swing Trader'
-                    },
-                    {
-                        wallet: '9dF2...8kLm',
-                        username: 'DeFiKing',
-                        pnl24h: 8.9,
-                        winRate: 65,
-                        avgTrade: 5.1,
-                        followers: 980,
-                        tradingStyle: 'HFT'
-                    }
-                ];
-                
-                renderTopTraders(traders);
-            } catch (error) {
-                console.error('Error loading top traders:', error);
-            }
+            console.log('Loading top traders...');
+            
+            const traders = [
+                {
+                    wallet: '7xKx...3mNp',
+                    username: 'SolanaWhale',
+                    pnl24h: 12.5,
+                    winRate: 78,
+                    avgTrade: 2.3,
+                    followers: 1250,
+                    tradingStyle: 'Swing Trader'
+                },
+                {
+                    wallet: '9dF2...8kLm',
+                    username: 'DeFiKing',
+                    pnl24h: 8.9,
+                    winRate: 65,
+                    avgTrade: 5.1,
+                    followers: 980,
+                    tradingStyle: 'HFT'
+                }
+            ];
+            
+            renderTopTraders(traders);
         }
 
         // UI Rendering Functions
         function updatePortfolioStats() {
             const totalValue = appState.portfolioData.reduce((sum, token) => sum + token.value, 0);
             const totalChange = appState.portfolioData.reduce((sum, token) => sum + (token.value * token.change24h / 100), 0);
-            const changePercent = (totalChange / totalValue) * 100;
+            const changePercent = totalValue > 0 ? (totalChange / totalValue) * 100 : 0;
             
-            document.getElementById('totalValue').textContent = `${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('totalChange').textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
-            document.getElementById('totalChange').className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+            const totalValueEl = document.getElementById('totalValue');
+            const totalChangeEl = document.getElementById('totalChange');
+            const solValueEl = document.getElementById('solValue');
+            const solChangeEl = document.getElementById('solChange');
+            const tokenCountEl = document.getElementById('tokenCount');
+            const pnlValueEl = document.getElementById('pnlValue');
+            const pnlChangeEl = document.getElementById('pnlChange');
+            const solBalanceEl = document.getElementById('solBalance');
+            
+            if (totalValueEl) totalValueEl.textContent = `$${totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            if (totalChangeEl) {
+                totalChangeEl.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+                totalChangeEl.className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+            }
             
             const solToken = appState.portfolioData.find(t => t.symbol === 'SOL');
             if (solToken) {
-                document.getElementById('solValue').textContent = `${solToken.amount.toFixed(2)} SOL`;
-                document.getElementById('solChange').textContent = `${solToken.change24h >= 0 ? '+' : ''}${solToken.change24h.toFixed(2)}%`;
-                document.getElementById('solChange').className = `stat-change ${solToken.change24h >= 0 ? 'positive' : 'negative'}`;
-                
-                // Update wallet balance display
-                document.getElementById('solBalance').textContent = `${solToken.amount.toFixed(2)} SOL`;
+                if (solValueEl) solValueEl.textContent = `${solToken.amount.toFixed(2)} SOL`;
+                if (solChangeEl) {
+                    solChangeEl.textContent = `${solToken.change24h >= 0 ? '+' : ''}${solToken.change24h.toFixed(2)}%`;
+                    solChangeEl.className = `stat-change ${solToken.change24h >= 0 ? 'positive' : 'negative'}`;
+                }
+                if (solBalanceEl) solBalanceEl.textContent = `${solToken.amount.toFixed(2)} SOL`;
             }
             
-            document.getElementById('tokenCount').textContent = appState.portfolioData.length;
-            document.getElementById('pnlValue').textContent = `${totalChange.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
-            document.getElementById('pnlChange').textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
-            document.getElementById('pnlChange').className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+            if (tokenCountEl) tokenCountEl.textContent = appState.portfolioData.length;
+            if (pnlValueEl) pnlValueEl.textContent = `$${totalChange.toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            if (pnlChangeEl) {
+                pnlChangeEl.textContent = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+                pnlChangeEl.className = `stat-change ${changePercent >= 0 ? 'positive' : 'negative'}`;
+            }
         }
 
         function renderTokenList() {
             const tokenList = document.getElementById('tokenList');
+            if (!tokenList) return;
+            
             tokenList.innerHTML = '';
             
             appState.portfolioData.forEach(token => {
@@ -1343,12 +1010,12 @@
                         </div>
                     </div>
                     <div class="token-stats">
-                        <div class="token-price">${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
+                        <div class="token-price">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
                         <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
                             ${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%
                         </div>
                         <div style="color: #888; font-size: 0.8rem; margin-top: 0.2rem;">
-                            ${token.value.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                            $${token.value.toLocaleString(undefined, {minimumFractionDigits: 2})}
                         </div>
                     </div>
                 `;
@@ -1358,6 +1025,8 @@
 
         function renderTrendingTokens(tokens) {
             const container = document.getElementById('trendingTokens');
+            if (!container) return;
+            
             container.innerHTML = '';
             
             tokens.forEach(token => {
@@ -1368,11 +1037,11 @@
                         <div class="token-icon">${token.symbol.charAt(0)}</div>
                         <div class="token-details">
                             <h4>${token.symbol}</h4>
-                            <span>Vol: ${(token.volume / 1000000).toFixed(1)}M</span>
+                            <span>Vol: $${(token.volume / 1000000).toFixed(1)}M</span>
                         </div>
                     </div>
                     <div class="token-stats">
-                        <div class="token-price">${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
+                        <div class="token-price">$${token.price.toLocaleString(undefined, {minimumFractionDigits: 6})}</div>
                         <div class="token-change ${token.change >= 0 ? 'positive' : 'negative'}">
                             ${token.change >= 0 ? '+' : ''}${token.change.toFixed(1)}%
                         </div>
@@ -1384,43 +1053,33 @@
 
         function renderSentimentFeed(posts) {
             const feed = document.getElementById('sentimentFeed');
+            if (!feed) return;
+            
             feed.innerHTML = '';
             
             posts.forEach(post => {
                 const postElement = document.createElement('div');
-                postElement.className = 'social-item';
+                postElement.className = 'token-item';
                 
                 const sentimentEmoji = post.sentiment === 'bullish' ? '🐂' : post.sentiment === 'bearish' ? '🐻' : '😐';
                 const timeAgo = getTimeAgo(post.timestamp);
                 
                 postElement.innerHTML = `
-                    <div class="user-avatar">${post.author.charAt(0)}</div>
-                    <div class="social-content">
-                        <div class="social-header">
-                            <span class="username">${post.author}</span>
-                            <span style="color: #888;">•</span>
-                            <span style="color: #ff6b6b; font-weight: 600;">${post.token}</span>
-                            <span style="color: #888;">•</span>
-                            <span>${sentimentEmoji}</span>
-                            <span class="timestamp">${timeAgo}</span>
+                    <div class="token-info">
+                        <div class="token-icon">${post.author.charAt(0)}</div>
+                        <div class="token-details">
+                            <h4>${post.author} • ${post.token} ${sentimentEmoji}</h4>
+                            <span>${timeAgo}</span>
                         </div>
+                    </div>
+                    <div style="flex: 1; margin-left: 1rem;">
                         <p style="margin: 0.5rem 0; line-height: 1.5;">${post.content}</p>
                         ${post.prediction ? `<div style="color: #4ecdc4; font-weight: 600; margin: 0.5rem 0;">
-                            Price Target: ${post.prediction}
+                            Price Target: $${post.prediction}
                         </div>` : ''}
-                        <div class="social-stats">
-                            <div class="social-stat">
-                                <i class="fas fa-thumbs-up"></i>
-                                <span>${post.upvotes}</span>
-                            </div>
-                            <div class="social-stat">
-                                <i class="fas fa-thumbs-down"></i>
-                                <span>${post.downvotes}</span>
-                            </div>
-                            <div class="social-stat">
-                                <i class="fas fa-share"></i>
-                                <span>Share</span>
-                            </div>
+                        <div style="display: flex; gap: 1rem; margin-top: 0.5rem; color: #888; font-size: 0.8rem;">
+                            <span><i class="fas fa-thumbs-up"></i> ${post.upvotes}</span>
+                            <span><i class="fas fa-thumbs-down"></i> ${post.downvotes}</span>
                         </div>
                     </div>
                 `;
@@ -1430,31 +1089,25 @@
 
         function renderLeaderboard(leaders) {
             const leaderboard = document.getElementById('leaderboard');
+            if (!leaderboard) return;
+            
             leaderboard.innerHTML = '';
             
             leaders.forEach((leader, index) => {
                 const leaderItem = document.createElement('div');
-                leaderItem.className = 'social-item';
+                leaderItem.className = 'token-item';
                 leaderItem.innerHTML = `
-                    <div class="user-avatar">${index + 1}</div>
-                    <div class="social-content">
-                        <div class="social-header">
-                            <span class="username">${leader.username}</span>
-                            ${index < 3 ? `<span class="achievement-badge">TOP ${index + 1}</span>` : ''}
-                        </div>
-                        <div style="color: #888; font-size: 0.9rem;">${leader.wallet}</div>
-                        <div class="social-stats">
-                            <div class="social-stat">
-                                <i class="fas fa-users"></i>
-                                <span>${leader.followers} followers</span>
-                            </div>
-                            <div class="social-stat">
-                                <i class="fas fa-chart-line"></i>
-                                <span class="positive">+${leader.performance}%</span>
-                            </div>
+                    <div class="token-info">
+                        <div class="token-icon">${index + 1}</div>
+                        <div class="token-details">
+                            <h4>${leader.username}</h4>
+                            <span>${leader.wallet}</span>
                         </div>
                     </div>
-                    <button class="btn btn-secondary btn-small">Follow</button>
+                    <div class="token-stats">
+                        <div style="color: #888; font-size: 0.8rem;">${leader.followers} followers</div>
+                        <div class="positive">+${leader.performance}%</div>
+                    </div>
                 `;
                 leaderboard.appendChild(leaderItem);
             });
@@ -1462,38 +1115,24 @@
 
         function renderTopTraders(traders) {
             const container = document.getElementById('tradersList');
+            if (!container) return;
+            
             container.innerHTML = '';
             
             traders.forEach(trader => {
                 const traderItem = document.createElement('div');
-                traderItem.className = 'social-item';
+                traderItem.className = 'token-item';
                 traderItem.innerHTML = `
-                    <div class="user-avatar">${trader.username.charAt(0)}</div>
-                    <div class="social-content">
-                        <div class="social-header">
-                            <span class="username">${trader.username}</span>
-                            <span style="color: #888;">•</span>
-                            <span style="color: #4ecdc4; font-size: 0.8rem;">${trader.tradingStyle}</span>
-                        </div>
-                        <div style="color: #888; font-size: 0.9rem; margin: 0.3rem 0;">${trader.wallet}</div>
-                        <div class="social-stats">
-                            <div class="social-stat">
-                                <i class="fas fa-chart-line"></i>
-                                <span class="positive">+${trader.pnl24h}% (24h)</span>
-                            </div>
-                            <div class="social-stat">
-                                <i class="fas fa-target"></i>
-                                <span>${trader.winRate}% win rate</span>
-                            </div>
-                            <div class="social-stat">
-                                <i class="fas fa-users"></i>
-                                <span>${trader.followers} followers</span>
-                            </div>
+                    <div class="token-info">
+                        <div class="token-icon">${trader.username.charAt(0)}</div>
+                        <div class="token-details">
+                            <h4>${trader.username}</h4>
+                            <span>${trader.tradingStyle} • ${trader.winRate}% win rate</span>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 0.5rem;">
-                        <button class="btn btn-secondary btn-small">Follow</button>
-                        <button class="btn btn-primary btn-small">Copy</button>
+                    <div class="token-stats">
+                        <div class="positive">+${trader.pnl24h}% (24h)</div>
+                        <div style="color: #888; font-size: 0.8rem;">${trader.followers} followers</div>
                     </div>
                 `;
                 container.appendChild(traderItem);
@@ -1504,17 +1143,19 @@
         let portfolioChart = null;
 
         function updatePortfolioChart() {
-            const ctx = document.getElementById('portfolioChart').getContext('2d');
-            const timeframe = document.getElementById('chartTimeframe').value;
+            const ctx = document.getElementById('portfolioChart');
+            if (!ctx) return;
+            
+            const chartCtx = ctx.getContext('2d');
             
             // Generate mock historical data
-            const data = generateChartData(timeframe);
+            const data = generateChartData();
             
             if (portfolioChart) {
                 portfolioChart.destroy();
             }
             
-            portfolioChart = new Chart(ctx, {
+            portfolioChart = new Chart(chartCtx, {
                 type: 'line',
                 data: {
                     labels: data.labels,
@@ -1551,7 +1192,7 @@
                             ticks: {
                                 color: '#888',
                                 callback: function(value) {
-                                    return ' + value.toLocaleString();
+                                    return '$' + value.toLocaleString();
                                 }
                             }
                         }
@@ -1560,38 +1201,16 @@
             });
         }
 
-        function generateChartData(timeframe) {
-            const now = new Date();
+        function generateChartData() {
             const labels = [];
             const values = [];
             let baseValue = 10000;
             
-            let points, interval;
-            switch (timeframe) {
-                case '24h':
-                    points = 24;
-                    interval = 60 * 60 * 1000; // 1 hour
-                    break;
-                case '7d':
-                    points = 7;
-                    interval = 24 * 60 * 60 * 1000; // 1 day
-                    break;
-                case '30d':
-                    points = 30;
-                    interval = 24 * 60 * 60 * 1000; // 1 day
-                    break;
-                case '1y':
-                    points = 12;
-                    interval = 30 * 24 * 60 * 60 * 1000; // 1 month
-                    break;
-            }
-            
-            for (let i = points; i >= 0; i--) {
-                const date = new Date(now.getTime() - (i * interval));
-                labels.push(formatChartLabel(date, timeframe));
+            for (let i = 23; i >= 0; i--) {
+                const date = new Date(Date.now() - (i * 60 * 60 * 1000));
+                labels.push(date.getHours() + ':00');
                 
-                // Generate realistic price movement
-                const change = (Math.random() - 0.5) * 0.1; // ±5% max change
+                const change = (Math.random() - 0.5) * 0.05;
                 baseValue += baseValue * change;
                 values.push(baseValue);
             }
@@ -1599,227 +1218,83 @@
             return { labels, values };
         }
 
-        function formatChartLabel(date, timeframe) {
-            switch (timeframe) {
-                case '24h':
-                    return date.getHours() + ':00';
-                case '7d':
-                case '30d':
-                    return (date.getMonth() + 1) + '/' + date.getDate();
-                case '1y':
-                    return date.toLocaleDateString('en', { month: 'short' });
-                default:
-                    return date.toLocaleDateString();
-            }
-        }
-
-        // Modal Functions
-        function openAlertModal() {
-            populateTokenSelect('alertToken');
-            document.getElementById('alertModal').classList.add('active');
-        }
-
-        function openCopyTradeModal() {
-            document.getElementById('copyTradeModal').classList.add('active');
-        }
-
-        function openFollowModal() {
-            document.getElementById('followModal').classList.add('active');
-        }
-
-        function openSentimentModal() {
-            populateTokenSelect('sentimentToken');
-            document.getElementById('sentimentModal').classList.add('active');
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
-        }
-
-        function populateTokenSelect(selectId) {
-            const select = document.getElementById(selectId);
-            select.innerHTML = '<option value="">Select a token</option>';
-            
-            appState.portfolioData.forEach(token => {
-                const option = document.createElement('option');
-                option.value = token.mint;
-                option.textContent = `${token.symbol} - ${token.price.toFixed(6)}`;
-                select.appendChild(option);
-            });
-        }
-
-        // Form Handlers
-        async function createAlert(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(e.target);
-            const alertData = {
-                token: document.getElementById('alertToken').value,
-                type: document.getElementById('alertType').value,
-                price: parseFloat(document.getElementById('alertPrice').value),
-                message: document.getElementById('alertMessage').value || 'Price alert triggered'
-            };
-            
-            // In real implementation, this would call the smart contract
-            appState.alerts.push({
-                id: Date.now(),
-                ...alertData,
-                active: true,
-                created: new Date()
-            });
-            
-            closeModal('alertModal');
-            showNotification('Price alert created successfully!', 'success');
-            e.target.reset();
-        }
-
-        async function createCopyTrade(e) {
-            e.preventDefault();
-            
-            const copyTradeData = {
-                targetWallet: document.getElementById('targetWallet').value,
-                maxAmount: parseFloat(document.getElementById('maxAmount').value),
-                stopLoss: parseInt(document.getElementById('stopLoss').value),
-                takeProfit: parseInt(document.getElementById('takeProfit').value)
-            };
-            
-            // Validate wallet address format
-            if (copyTradeData.targetWallet.length < 32) {
-                showNotification('Invalid wallet address', 'error');
-                return;
-            }
-            
-            // In real implementation, this would call the smart contract
-            closeModal('copyTradeModal');
-            showNotification('Copy trade setup successfully!', 'success');
-            e.target.reset();
-        }
-
-        async function followWallet(e) {
-            e.preventDefault();
-            
-            const walletData = {
-                address: document.getElementById('followWallet').value,
-                nickname: document.getElementById('walletNickname').value || 'Unknown Trader'
-            };
-            
-            appState.followedWallets.push({
-                id: Date.now(),
-                ...walletData,
-                followed: new Date()
-            });
-            
-            closeModal('followModal');
-            showNotification(`Now following ${walletData.nickname}!`, 'success');
-            e.target.reset();
-        }
-
-        async function createSentimentPost(e) {
-            e.preventDefault();
-            
-            const postData = {
-                token: document.getElementById('sentimentToken').value,
-                sentiment: document.getElementById('sentimentType').value,
-                content: document.getElementById('sentimentContent').value,
-                prediction: document.getElementById('pricePrediction').value ? 
-                    parseFloat(document.getElementById('pricePrediction').value) : null
-            };
-            
-            const newPost = {
-                id: Date.now(),
-                author: appState.userAccount?.username || 'Anonymous',
-                timestamp: new Date(),
-                upvotes: 0,
-                downvotes: 0,
-                ...postData
-            };
-            
-            appState.sentimentPosts.unshift(newPost);
-            renderSentimentFeed(appState.sentimentPosts);
-            
-            closeModal('sentimentModal');
-            showNotification('Sentiment posted successfully!', 'success');
-            e.target.reset();
-        }
-
         // Utility Functions
-        function switchSection(sectionName) {
-            // Update navigation
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
-            
-            // Update content
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.remove('active');
-            });
-            document.getElementById(sectionName).classList.add('active');
-        }
-
-        function showLoading(containerId) {
-            document.getElementById(containerId).innerHTML = `
-                <div class="loading">
-                    <div class="spinner"></div>
-                </div>
-            `;
-        }
-
-        function showNotification(message, type = 'info') {
+        function showNotification(message) {
             const notification = document.getElementById('notification');
-            notification.textContent = message;
-            notification.className = `notification ${type}`;
-            notification.classList.add('show');
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
+            if (notification) {
+                notification.textContent = message;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            console.log('Notification:', message);
         }
 
         function getTimeAgo(date) {
             const seconds = Math.floor((new Date() - date) / 1000);
             
-            let interval = seconds / 31536000;
-            if (interval > 1) return Math.floor(interval) + "y ago";
-            
-            interval = seconds / 2592000;
-            if (interval > 1) return Math.floor(interval) + "mo ago";
-            
-            interval = seconds / 86400;
-            if (interval > 1) return Math.floor(interval) + "d ago";
-            
-            interval = seconds / 3600;
-            if (interval > 1) return Math.floor(interval) + "h ago";
-            
-            interval = seconds / 60;
-            if (interval > 1) return Math.floor(interval) + "m ago";
-            
-            return Math.floor(seconds) + "s ago";
-        }
-
-        async function refreshPortfolio() {
-            if (appState.connected) {
-                await loadUserPortfolio();
-                showNotification('Portfolio refreshed!', 'success');
-            }
+            if (seconds < 60) return seconds + 's ago';
+            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
+            return Math.floor(seconds / 86400) + 'd ago';
         }
 
         function startDataRefreshInterval() {
-            // Refresh data every 30 seconds
             setInterval(async () => {
                 if (appState.connected) {
-                    await loadUserPortfolio();
+                    console.log('Refreshing data...');
+                    // Add some random variation to simulate live data
+                    appState.portfolioData.forEach(token => {
+                        token.change24h += (Math.random() - 0.5) * 0.5;
+                        token.price *= (1 + (Math.random() - 0.5) * 0.001);
+                        token.value = token.amount * token.price;
+                    });
+                    updatePortfolioStats();
+                    renderTokenList();
                 }
-                await loadTrendingTokens();
             }, 30000);
         }
 
-        // Click outside modal to close
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                e.target.classList.remove('active');
+        // Button Functions
+        function refreshPortfolio() {
+            console.log('Refreshing portfolio...');
+            if (appState.connected) {
+                loadUserPortfolio();
+                showNotification('Portfolio refreshed!');
+            } else {
+                showNotification('Please connect your wallet first');
             }
+        }
+
+        function createNewAlert() {
+            showNotification('Alert creation coming soon!');
+        }
+
+        function openCopyTradeModal() {
+            showNotification('Copy trading setup coming soon!');
+        }
+
+        function followNewWallet() {
+            showNotification('Wallet following coming soon!');
+        }
+
+        function createNewPost() {
+            showNotification('Sentiment posting coming soon!');
+        }
+
+        function notifyWhenReady() {
+            showNotification('You will be notified when tournaments are ready!');
+        }
+
+        // Error handling
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+            showNotification('An error occurred. Please refresh the page.');
         });
+
+        console.log('Cypher dApp script loaded successfully');
     </script>
 </body>
 </html>
