@@ -6,6 +6,7 @@
     <title>Cypher - Advanced Portfolio Analytics</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    <script src="https://unpkg.com/@solana/wallet-adapter-base@latest/lib/index.iife.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -137,6 +138,13 @@
             box-shadow: 0 10px 25px rgba(255, 107, 107, 0.3);
         }
 
+        .wallet-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
         .wallet-info {
             display: flex;
             align-items: center;
@@ -145,6 +153,42 @@
             padding: 0.5rem 1rem;
             border-radius: 10px;
             backdrop-filter: blur(10px);
+        }
+
+        .wallet-dropdown {
+            position: relative;
+        }
+
+        .wallet-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 0.5rem;
+            min-width: 200px;
+            z-index: 1001;
+            display: none;
+            backdrop-filter: blur(20px);
+        }
+
+        .wallet-menu.show {
+            display: block;
+        }
+
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .wallet-option:hover {
+            background: rgba(255, 255, 255, 0.1);
         }
 
         /* Navigation */
@@ -348,6 +392,7 @@
             border: 1px solid rgba(255, 255, 255, 0.05);
             transition: all 0.3s ease;
             cursor: pointer;
+            position: relative;
         }
 
         .token-item:hover {
@@ -407,109 +452,95 @@
             margin-top: 0.2rem;
         }
 
-        /* Whale Tracking */
-        .whale-controls {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .threshold-selector {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .threshold-btn {
-            padding: 0.5rem 1rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.8rem;
-        }
-
-        .threshold-btn.active {
-            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
-            border-color: transparent;
-        }
-
-        .custom-threshold {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .threshold-input {
-            width: 80px;
-            padding: 0.5rem;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
-            border-radius: 6px;
-            font-size: 0.8rem;
-        }
-
-        .threshold-input:focus {
-            outline: none;
-            border-color: #4ecdc4;
-        }
-
-        .whale-transaction {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 12px;
-            border: 1px solid rgba(255, 215, 0, 0.2);
-            margin-bottom: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .whale-transaction:hover {
-            background: rgba(255, 215, 0, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .whale-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 215, 0, 0.3);
+        /* Loading States */
+        .loading {
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #ffd700;
-            font-size: 1.2rem;
+            padding: 2rem;
         }
 
-        .whale-details {
-            flex: 1;
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #ff6b6b;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
         }
 
-        .whale-amount {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #ffd700;
-            margin-bottom: 0.3rem;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .whale-token {
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
             color: #888;
-            font-size: 0.85rem;
-            margin-bottom: 0.2rem;
         }
 
-        .whale-wallet {
-            font-size: 0.75rem;
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* API Status Indicator */
+        .api-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
             color: #888;
-            font-family: 'Courier New', monospace;
+        }
+
+        .api-status.online {
+            color: #4ecdc4;
+        }
+
+        .api-status.offline {
+            color: #ff6b6b;
+        }
+
+        .api-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Error States */
+        .error-message {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #ff6b6b;
+            text-align: center;
+        }
+
+        .retry-btn {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            color: #ff6b6b;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .retry-btn:hover {
+            background: rgba(255, 107, 107, 0.3);
         }
 
         /* Chart Container */
@@ -522,19 +553,304 @@
             padding: 1rem;
         }
 
-        /* Form elements */
-        .form-select, .form-input {
+        .chart-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .chart-type-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chart-type-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .chart-type-btn.active {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border-color: transparent;
+        }
+
+        .chart-type-btn:hover {
             background: rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-type-btn.active:hover {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+        }
+
+        /* Token Detail Modal */
+        .token-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .token-modal.show {
+            display: flex;
+        }
+
+        .token-modal-content {
+            background: rgba(26, 26, 26, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .token-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .token-modal-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .token-modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .token-modal-close:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .token-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .token-stat-item {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .token-stat-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.3rem;
+        }
+
+        .token-stat-label {
+            color: #888;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+        }
+
+        /* Alert Creation Modal */
+        .alert-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .alert-modal.show {
+            display: flex;
+        }
+
+        .alert-modal-content {
+            background: rgba(26, 26, 26, 0.95);
+            border-radius: 20px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 100%;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .form-input, .form-select {
+            width: 100%;
+            padding: 0.75rem;
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
             color: white;
-            padding: 0.5rem;
-            font-size: 0.9rem;
+            font-size: 1rem;
+        }
+
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 0 2px rgba(78, 205, 196, 0.2);
         }
 
         .form-select option {
             background: #1a1a1a;
             color: white;
+        }
+
+        .alert-type-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-type-option {
+            padding: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .alert-type-option.selected {
+            background: linear-gradient(45deg, rgba(255, 107, 107, 0.2), rgba(78, 205, 196, 0.2));
+            border-color: #4ecdc4;
+        }
+
+        .alert-type-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .alert-type-option.selected:hover {
+            background: linear-gradient(45deg, rgba(255, 107, 107, 0.2), rgba(78, 205, 196, 0.2));
+        }
+
+        /* Price Alert Cards */
+        .alert-card {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid #4ecdc4;
+            transition: all 0.3s ease;
+        }
+
+        .alert-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .alert-card.triggered {
+            border-left-color: #ff6b6b;
+            background: rgba(255, 107, 107, 0.1);
+        }
+
+        .alert-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .alert-card-title {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .alert-card-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .alert-card-status.active {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+        }
+
+        .alert-card-status.triggered {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+        }
+
+        .alert-card-details {
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .alert-card-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .alert-action-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+        }
+
+        .alert-action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .alert-action-btn.delete {
+            color: #ff6b6b;
+            border-color: rgba(255, 107, 107, 0.3);
+        }
+
+        .alert-action-btn.delete:hover {
+            background: rgba(255, 107, 107, 0.1);
         }
 
         /* Buttons */
@@ -573,51 +889,6 @@
             font-size: 0.8rem;
         }
 
-        /* Live Status Indicator */
-        .live-indicator {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.8rem;
-            color: #4ecdc4;
-        }
-
-        .live-dot {
-            width: 8px;
-            height: 8px;
-            background: #4ecdc4;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-
-        /* Loading */
-        .loading {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-        }
-
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #ff6b6b;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
         /* Toast Notification */
         .toast-notification {
             position: fixed;
@@ -637,113 +908,6 @@
 
         .toast-notification.show {
             transform: translateX(0);
-        }
-
-        /* Notification Panel */
-        .notification-panel {
-            position: fixed;
-            top: 80px;
-            right: 1rem;
-            width: 350px;
-            max-height: 500px;
-            background: rgba(26, 26, 26, 0.95);
-            border-radius: 15px;
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 1500;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-            overflow: hidden;
-        }
-
-        .notification-panel.show {
-            transform: translateX(0);
-        }
-
-        .notification-header {
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .notification-list {
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 0.5rem;
-        }
-
-        .notification-item {
-            padding: 1rem;
-            border-radius: 10px;
-            margin-bottom: 0.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 3px solid #4ecdc4;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .notification-item:hover {
-            background: rgba(255, 255, 255, 0.07);
-        }
-
-        /* Activity Feed */
-        .activity-feed {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-right: 0.5rem;
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            margin-bottom: 0.5rem;
-            border-left: 3px solid transparent;
-            transition: all 0.3s ease;
-        }
-
-        .activity-item.buy { border-left-color: #4ecdc4; }
-        .activity-item.sell { border-left-color: #ff6b6b; }
-        .activity-item.whale { border-left-color: #ffd700; }
-
-        .activity-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-        }
-
-        .activity-icon.buy { background: rgba(78, 205, 196, 0.2); color: #4ecdc4; }
-        .activity-icon.sell { background: rgba(255, 107, 107, 0.2); color: #ff6b6b; }
-        .activity-icon.whale { background: rgba(255, 215, 0, 0.2); color: #ffd700; }
-
-        .activity-content {
-            flex: 1;
-        }
-
-        .activity-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            margin-bottom: 0.2rem;
-        }
-
-        .activity-details {
-            font-size: 0.75rem;
-            color: #888;
-        }
-
-        .activity-value {
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-align: right;
         }
 
         /* Responsive */
@@ -779,15 +943,9 @@
                 grid-template-columns: repeat(2, 1fr);
             }
 
-            .whale-controls {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .notification-panel {
-                width: calc(100vw - 2rem);
-                right: 1rem;
-                left: 1rem;
+            .wallet-menu {
+                right: auto;
+                left: 0;
             }
         }
     </style>
@@ -803,23 +961,23 @@
                 
                 <div class="header-stats">
                     <div class="stat-item">
-                        <div class="stat-value" id="headerSolPrice">$245.67</div>
+                        <div class="stat-value" id="headerSolPrice">Loading...</div>
                         <div class="stat-label">SOL</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="headerTotalVol">$2.8B</div>
+                        <div class="stat-value" id="headerTotalVol">Loading...</div>
                         <div class="stat-label">24h Volume</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-value" id="headerActiveWallets">12</div>
-                        <div class="stat-label">Tracked Whales</div>
+                        <div class="stat-value" id="headerActiveWallets">0</div>
+                        <div class="stat-label">Tracked Tokens</div>
                     </div>
                 </div>
 
                 <div class="wallet-section">
-                    <div class="live-indicator">
-                        <div class="live-dot"></div>
-                        <span>Live</span>
+                    <div class="api-status" id="apiStatus">
+                        <div class="api-dot"></div>
+                        <span>Connecting...</span>
                     </div>
                     <button id="notificationsBtn" class="notifications-btn" onclick="toggleNotificationPanel()">
                         <i class="fas fa-bell"></i>
@@ -830,9 +988,29 @@
                         <span id="walletAddress"></span>
                         <span id="solBalance">0 SOL</span>
                     </div>
-                    <button id="connectWallet" class="wallet-btn" onclick="connectWallet()">
-                        <i class="fas fa-plug"></i> Connect Wallet
-                    </button>
+                    <div class="wallet-dropdown">
+                        <button id="connectWallet" class="wallet-btn" onclick="toggleWalletMenu()">
+                            <i class="fas fa-plug"></i> <span id="walletBtnText">Connect Wallet</span>
+                        </button>
+                        <div id="walletMenu" class="wallet-menu">
+                            <div class="wallet-option" onclick="connectWallet('phantom')">
+                                <i class="fas fa-ghost" style="color: #ab9ff2;"></i>
+                                <span>Phantom</span>
+                            </div>
+                            <div class="wallet-option" onclick="connectWallet('solflare')">
+                                <i class="fas fa-fire" style="color: #fc8c04;"></i>
+                                <span>Solflare</span>
+                            </div>
+                            <div class="wallet-option" onclick="connectWallet('other')">
+                                <i class="fas fa-wallet"></i>
+                                <span>Other Wallets</span>
+                            </div>
+                            <div class="wallet-option" onclick="disconnectWallet()" style="border-top: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem; padding-top: 1rem; color: #ff6b6b;">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Disconnect</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -844,35 +1022,22 @@
                     <i class="fas fa-chart-pie"></i>
                     Portfolio
                 </div>
+                <div class="nav-tab" data-section="market" onclick="switchSection('market')">
+                    <i class="fas fa-globe"></i>
+                    Market
+                </div>
                 <div class="nav-tab" data-section="whale" onclick="switchSection('whale')">
                     <i class="fas fa-fish"></i>
                     Whale Tracker
-                </div>
-                <div class="nav-tab" data-section="social" onclick="switchSection('social')">
-                    <i class="fas fa-users"></i>
-                    Social
                 </div>
                 <div class="nav-tab" data-section="alerts" onclick="switchSection('alerts')">
                     <i class="fas fa-bell"></i>
                     Alerts
                 </div>
-                <div class="nav-tab" data-section="market" onclick="switchSection('market')">
-                    <i class="fas fa-globe"></i>
-                    Market
+                <div class="nav-tab" data-section="social" onclick="switchSection('social')">
+                    <i class="fas fa-users"></i>
+                    Social
                 </div>
-            </div>
-        </div>
-
-        <!-- Notification Panel -->
-        <div id="notificationPanel" class="notification-panel">
-            <div class="notification-header">
-                <h3>Notifications</h3>
-                <button style="background: none; border: none; color: #888; cursor: pointer;" onclick="toggleNotificationPanel()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="notification-list" id="notificationList">
-                <!-- Notifications will be populated here -->
             </div>
         </div>
 
@@ -882,33 +1047,33 @@
             <section id="portfolio" class="section active">
                 <div class="portfolio-stats">
                     <div class="stat-card">
-                        <div class="stat-card-value" id="totalValue">$9,247.83</div>
+                        <div class="stat-card-value" id="totalValue">$0.00</div>
                         <div class="stat-card-label">Total Value</div>
-                        <div class="stat-change positive" id="totalChange">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+8.2%</span>
+                        <div class="stat-change" id="totalChange">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Connect wallet</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-card-value" id="pnlValue">$697.45</div>
+                        <div class="stat-card-value" id="pnlValue">$0.00</div>
                         <div class="stat-card-label">24h P&L</div>
-                        <div class="stat-change positive" id="pnlChange">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>+8.2%</span>
+                        <div class="stat-change" id="pnlChange">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Connect wallet</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-card-value" id="tokenCount">6</div>
+                        <div class="stat-card-value" id="tokenCount">0</div>
                         <div class="stat-card-label">Holdings</div>
-                        <div class="stat-change positive" id="tokenChange">
+                        <div class="stat-change">
                             <i class="fas fa-coins"></i>
                             <span>Tokens</span>
                         </div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-card-value" id="alertsCount">4</div>
+                        <div class="stat-card-value" id="alertsCount">0</div>
                         <div class="stat-card-label">Active Alerts</div>
-                        <div class="stat-change positive">
+                        <div class="stat-change">
                             <i class="fas fa-bell"></i>
                             <span>Watching</span>
                         </div>
@@ -928,15 +1093,37 @@
                                     <option value="SOL">vs SOL</option>
                                     <option value="BTC">vs BTC</option>
                                 </select>
-                                <select id="chartTimeframe" class="form-select" onchange="updatePortfolioChart()">
-                                    <option value="1H">1H</option>
-                                    <option value="4H">4H</option>
-                                    <option value="24H">24H</option>
-                                    <option value="7D">7D</option>
+                                <select id="chartTimeframe" class="form-select" onchange="updatePortfolioChartTimeframe()">
+                                    <option value="15m">15min</option>
+                                    <option value="1h">1hour</option>
+                                    <option value="4h">4hour</option>
+                                    <option value="24h">24hour</option>
+                                    <option value="7d">7day</option>
                                 </select>
                             </div>
                         </div>
                         <div class="chart-container">
+                            <div class="chart-controls">
+                                <div class="chart-type-selector">
+                                    <div class="chart-type-btn active" data-type="line" onclick="setChartType('line')">
+                                        <i class="fas fa-chart-line"></i> Line
+                                    </div>
+                                    <div class="chart-type-btn" data-type="candlestick" onclick="setChartType('candlestick')">
+                                        <i class="fas fa-chart-bar"></i> Candlestick
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                    <span style="color: #888; font-size: 0.8rem;">Technical Analysis:</span>
+                                    <label style="display: flex; align-items: center; gap: 0.3rem; color: #888; font-size: 0.8rem;">
+                                        <input type="checkbox" id="showMA" onchange="toggleMA()" style="margin: 0;">
+                                        <span>MA(20)</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; gap: 0.3rem; color: #888; font-size: 0.8rem;">
+                                        <input type="checkbox" id="showVolume" onchange="toggleVolume()" style="margin: 0;">
+                                        <span>Volume</span>
+                                    </label>
+                                </div>
+                            </div>
                             <canvas id="portfolioChart"></canvas>
                         </div>
                     </div>
@@ -944,10 +1131,12 @@
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Live Activity</h3>
-                            <p class="card-subtitle">Your wallet transactions</p>
+                            <p class="card-subtitle">Real-time market movements</p>
                         </div>
-                        <div id="liveActivity" class="activity-feed">
-                            <!-- Activity will be populated here -->
+                        <div id="liveActivity">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -959,90 +1148,75 @@
                             <i class="fas fa-sync-alt"></i> Refresh
                         </button>
                     </div>
-                    <div id="tokenList" class="token-list">
-                        <!-- Tokens will be populated here -->
+                    <div id="tokenList">
+                        <div class="empty-state">
+                            <i class="fas fa-wallet"></i>
+                            <p>Connect your wallet to view your token holdings</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Supports Phantom, Solflare, and other Solana wallets</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Whale Tracker Section -->
-            <section id="whale" class="section">
-                <div class="whale-controls">
-                    <div class="threshold-selector">
-                        <span style="color: #888; font-size: 0.9rem; margin-right: 1rem;">Alert Threshold:</span>
-                        <div class="threshold-btn active" data-threshold="20" onclick="setWhaleThreshold(20)">20 SOL</div>
-                        <div class="threshold-btn" data-threshold="50" onclick="setWhaleThreshold(50)">50 SOL</div>
-                        <div class="threshold-btn" data-threshold="100" onclick="setWhaleThreshold(100)">100 SOL</div>
-                        <div class="custom-threshold">
-                            <input type="number" class="threshold-input" placeholder="Custom" id="customThreshold" onchange="setCustomThreshold()">
-                            <span style="color: #888;">SOL</span>
-                        </div>
+            <!-- Market Section -->
+            <section id="market" class="section">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card">
+                        <div class="stat-card-value" id="marketSolPrice">Loading...</div>
+                        <div class="stat-card-label">SOL Price</div>
                     </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title">Live Whale Movements</h3>
-                        <p class="card-subtitle">Large transactions for your tokens</p>
+                    <div class="stat-card">
+                        <div class="stat-card-value" id="marketVolume">Loading...</div>
+                        <div class="stat-card-label">24h Volume</div>
                     </div>
-                    <div id="whaleMovements">
-                        <!-- Whale movements will be populated here -->
+                    <div class="stat-card">
+                        <div class="stat-card-value" id="marketCap">Loading...</div>
+                        <div class="stat-card-label">Market Cap</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-value" id="newTokens">Loading...</div>
+                        <div class="stat-card-label">Tracked Tokens</div>
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Token Whales</h3>
-                            <p class="card-subtitle">Top 100 holders per token</p>
+                            <h3 class="card-title">Trending Tokens</h3>
+                            <p class="card-subtitle">Top performers by volume</p>
                         </div>
-                        <div id="tokenWhales">
-                            <!-- Token whales will be populated here -->
+                        <div id="trendingTokens">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Followed Wallets</h3>
-                            <p class="card-subtitle">Wallets you're tracking</p>
+                            <h3 class="card-title">Market Movers</h3>
+                            <p class="card-subtitle">Biggest gainers & losers</p>
                         </div>
-                        <div id="followedWallets">
-                            <p style="color: #888; text-align: center; padding: 2rem;">
-                                No wallets followed yet. Follow whale wallets to track their activity.
-                            </p>
+                        <div id="marketMovers">
+                            <div class="loading">
+                                <div class="spinner"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Social Section -->
-            <section id="social" class="section">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="totalFollowers">0</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Followers</div>
-                    </div>
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="totalFollowing">0</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Following</div>
-                    </div>
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="socialRank">-</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Rank</div>
-                    </div>
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="socialScore">0</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Social Score</div>
-                    </div>
-                </div>
-
+            <!-- Whale Tracker Section -->
+            <section id="whale" class="section">
                 <div class="card">
                     <div class="card-header">
-                        <h3 class="card-title">Social Leaderboard</h3>
-                        <p class="card-subtitle">Most-followed wallets this week</p>
+                        <h3 class="card-title">Whale Tracker</h3>
+                        <p class="card-subtitle">Large wallet movements - Coming Soon</p>
                     </div>
-                    <div id="socialLeaderboard">
-                        <!-- Leaderboard will be populated here -->
+                    <div class="empty-state">
+                        <i class="fas fa-fish"></i>
+                        <p>Whale tracking features will be implemented in the next phase.</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Focus: Large transaction monitoring and whale wallet following</p>
                     </div>
                 </div>
             </section>
@@ -1052,14 +1226,16 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Price Alerts</h3>
-                        <button class="btn btn-primary btn-small" onclick="createPriceAlert()">
+                        <button class="btn btn-primary btn-small" onclick="openAlertModal()">
                             <i class="fas fa-plus"></i> New Alert
                         </button>
                     </div>
                     <div id="priceAlerts">
-                        <p style="color: #888; text-align: center; padding: 2rem;">
-                            No price alerts set. Create your first alert!
-                        </p>
+                        <div class="empty-state">
+                            <i class="fas fa-bell"></i>
+                            <p>No price alerts set. Create your first alert!</p>
+                            <p style="font-size: 0.9rem; margin-top: 0.5rem;">Get notified when tokens hit your target prices or technical conditions</p>
+                        </div>
                     </div>
                 </div>
 
@@ -1075,463 +1251,216 @@
                                 <div style="color: #888; font-size: 0.8rem;">Push notifications to browser</div>
                             </div>
                             <button class="btn btn-primary btn-small" onclick="requestNotificationPermission()">
-                                Enable
+                                <span id="notificationBtnText">Enable</span>
                             </button>
-                        </div>
-                        
-                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255, 255, 255, 0.03); border-radius: 10px;">
-                            <div>
-                                <div style="font-weight: 600;">Sound Alerts</div>
-                                <div style="color: #888; font-size: 0.8rem;">Audio notifications for important events</div>
-                            </div>
-                            <label style="display: flex; align-items: center; gap: 0.5rem;">
-                                <input type="checkbox" id="soundEnabled" checked> 
-                                <span style="color: #4ecdc4;">Enabled</span>
-                            </label>
                         </div>
                     </div>
                 </div>
             </section>
 
-            <!-- Market Section -->
-            <section id="market" class="section">
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="marketSolPrice">$245.67</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">SOL Price</div>
+            <!-- Social Section -->
+            <section id="social" class="section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Social Features</h3>
+                        <p class="card-subtitle">Community features - Coming Soon</p>
                     </div>
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="marketVolume">$2.8B</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">24h Volume</div>
-                    </div>
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="marketCap">$115B</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">Market Cap</div>
-                    </div>
-                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 12px; padding: 1rem; text-align: center; border: 1px solid rgba(255, 255, 255, 0.05);">
-                        <div style="font-size: 1.4rem; font-weight: 700; color: #ffffff; margin-bottom: 0.3rem;" id="newTokens">47</div>
-                        <div style="color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px;">New Tokens</div>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Trending Tokens</h3>
-                            <p class="card-subtitle">Top performers by volume</p>
-                        </div>
-                        <div id="trendingTokens" class="token-list">
-                            <!-- Trending tokens will be populated here -->
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <div class="card-header">
-                            <h3 class="card-title">Market Movers</h3>
-                            <p class="card-subtitle">Biggest gainers & losers</p>
-                        </div>
-                        <div id="marketMovers" class="token-list">
-                            <!-- Market movers will be populated here -->
-                        </div>
+                    <div class="empty-state">
+                        <i class="fas fa-users"></i>
+                        <p>Social trading features will be implemented in the next phase.</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Features: Follow traders, social sentiment, leaderboards</p>
                     </div>
                 </div>
             </section>
         </main>
+
+        <!-- Alert Creation Modal -->
+        <div id="alertModal" class="alert-modal">
+            <div class="alert-modal-content">
+                <div class="card-header" style="margin-bottom: 2rem;">
+                    <h3 class="card-title">Create Price Alert</h3>
+                    <button class="token-modal-close" onclick="closeAlertModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <form id="alertForm" onsubmit="createAlert(event)">
+                    <div class="form-group">
+                        <label class="form-label">Alert Type</label>
+                        <div class="alert-type-grid">
+                            <div class="alert-type-option selected" data-type="price" onclick="selectAlertType('price')">
+                                <i class="fas fa-dollar-sign" style="display: block; margin-bottom: 0.5rem; font-size: 1.2rem;"></i>
+                                <strong>Price Target</strong>
+                                <p style="margin: 0; font-size: 0.8rem; color: #888;">Alert when price hits target</p>
+                            </div>
+                            <div class="alert-type-option" data-type="percent" onclick="selectAlertType('percent')">
+                                <i class="fas fa-percentage" style="display: block; margin-bottom: 0.5rem; font-size: 1.2rem;"></i>
+                                <strong>% Change</strong>
+                                <p style="margin: 0; font-size: 0.8rem; color: #888;">Alert on percentage move</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="priceAlertFields" class="alert-fields">
+                        <div class="form-group">
+                            <label class="form-label">Target Price ($)</label>
+                            <input type="number" id="alertPrice" class="form-input" step="0.000001" placeholder="0.00">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            <i class="fas fa-bell"></i> Create Alert
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="closeAlertModal()">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification"></div>
 
     <script>
-        // Application State with Safe Storage
+        // ===== APPLICATION STATE =====
         const appState = {
-            connected: false,
-            wallet: null,
+            wallet: {
+                connected: false,
+                publicKey: null,
+                provider: null,
+                balance: 0,
+                tokens: []
+            },
+            marketData: new Map(),
             portfolioData: [],
-            historicalData: [],
-            whaleThreshold: 20,
-            notifications: [],
-            followedWallets: new Set(),
-            priceAlerts: [],
-            chartMode: 'USD',
-            lastUpdate: Date.now(),
-            tokenIcons: new Map(),
-            realTimeData: true
+            alerts: [],
+            currentChartType: 'line',
+            showMA: false,
+            showVolume: false,
+            lastUpdate: 0,
+            updateInterval: 30000, // 30 seconds
+            retryCount: 0,
+            maxRetries: 3
         };
 
-        // Safe Storage Implementation (handles sandboxed environments)
-        const SafeStorage = {
-            setItem: function(key, value) {
-                try {
-                    localStorage.setItem(key, value);
-                    return true;
-                } catch (error) {
-                    console.warn('localStorage blocked, using memory storage');
-                    this.memoryStorage = this.memoryStorage || {};
-                    this.memoryStorage[key] = value;
-                    return false;
-                }
-            },
-            
-            getItem: function(key) {
-                try {
-                    return localStorage.getItem(key);
-                } catch (error) {
-                    this.memoryStorage = this.memoryStorage || {};
-                    return this.memoryStorage[key] || null;
-                }
-            },
-            
-            removeItem: function(key) {
-                try {
-                    localStorage.removeItem(key);
-                } catch (error) {
-                    this.memoryStorage = this.memoryStorage || {};
-                    delete this.memoryStorage[key];
-                }
-            },
-            
-            memoryStorage: {}
-        };
-
-        // Enhanced Token Data with Real Icons
-        const KNOWN_TOKENS = {
-            'So11111111111111111111111111111111111111112': { 
-                symbol: 'SOL', name: 'Solana', decimals: 9, 
-                logo: '🟣', price: 245.67, change24h: 8.2
-            },
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { 
-                symbol: 'USDC', name: 'USD Coin', decimals: 6, 
-                logo: '💵', price: 1.00, change24h: 0.01
-            },
-            'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN': { 
-                symbol: 'JUP', name: 'Jupiter', decimals: 6, 
-                logo: '🪐', price: 0.89, change24h: 23.4
-            },
-            '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R': { 
-                symbol: 'RAY', name: 'Raydium', decimals: 6, 
-                logo: '⚡', price: 4.12, change24h: -2.8
-            },
-            'orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE': { 
-                symbol: 'ORCA', name: 'Orca', decimals: 6, 
-                logo: '🐋', price: 6.78, change24h: 12.1
-            },
-            'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { 
-                symbol: 'BONK', name: 'Bonk', decimals: 5, 
-                logo: '🚀', price: 0.000045, change24h: 15.2
-            }
-        };
-
-        // Demo portfolio data to avoid API dependency
-        const DEMO_PORTFOLIO = [
-            { 
-                mint: 'So11111111111111111111111111111111111111112',
-                symbol: 'SOL', name: 'Solana', amount: 15.789, 
-                price: 245.67, change24h: 8.2, logo: '🟣'
-            },
-            { 
-                mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-                symbol: 'USDC', name: 'USD Coin', amount: 3247.80, 
-                price: 1.00, change24h: 0.01, logo: '💵'
-            },
-            { 
-                mint: 'JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN',
-                symbol: 'JUP', name: 'Jupiter', amount: 1850.0, 
-                price: 0.89, change24h: 23.4, logo: '🪐'
-            },
-            { 
-                mint: '4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R',
-                symbol: 'RAY', name: 'Raydium', amount: 95.6, 
-                price: 4.12, change24h: -2.8, logo: '⚡'
-            },
-            { 
-                mint: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263',
-                symbol: 'BONK', name: 'Bonk', amount: 12000000, 
-                price: 0.000045, change24h: 15.2, logo: '🚀'
-            }
-        ];
-
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', initializeApp);
-
-        async function initializeApp() {
-            console.log('🚀 Initializing Cypher with Real Data Feeds...');
-            
-            try {
-                loadStoredData();
-                initializePortfolioData();
-                generateHistoricalData();
-                loadLiveActivity();
-                loadWhaleData();
-                loadSocialData();
-                loadTrendingTokens();
-                startRealTimeUpdates();
-                
-                console.log('✅ Application initialized successfully');
-                showToast('🎯 Cypher Analytics ready!');
-                
-            } catch (error) {
-                console.error('❌ Initialization error:', error);
-                showToast('⚠️ Error loading data, using demo mode');
-            }
-        }
-
-        // Safe Data Loading
-        function loadStoredData() {
-            try {
-                // Load followed wallets
-                const stored = SafeStorage.getItem('cypherFollowedWallets');
-                if (stored) {
-                    appState.followedWallets = new Set(JSON.parse(stored));
-                }
-                
-                // Load price alerts
-                const alerts = SafeStorage.getItem('cypherPriceAlerts');
-                if (alerts) {
-                    appState.priceAlerts = JSON.parse(alerts);
-                }
-                
-                console.log(`✅ Loaded ${appState.followedWallets.size} followed wallets`);
-                
-            } catch (error) {
-                console.warn('Error loading stored data:', error.message);
-            }
-        }
-
-        function initializePortfolioData() {
-            // Initialize with demo portfolio data
-            appState.portfolioData = DEMO_PORTFOLIO.map(token => ({
-                ...token,
-                value: token.amount * token.price,
-                decimals: KNOWN_TOKENS[token.mint]?.decimals || 6
-            }));
-            
-            updatePortfolioStats();
-            renderTokenList();
-            updatePortfolioChart();
-        }
-
-        function generateHistoricalData() {
-            const now = Date.now();
-            const points = 168; // 1 week of hourly data
-            const history = [];
-            let baseValue = 8500;
-            
-            for (let i = points; i >= 0; i--) {
-                const timestamp = now - (i * 60 * 60 * 1000);
-                const hourOfDay = new Date(timestamp).getHours();
-                const dayOfWeek = new Date(timestamp).getDay();
-                
-                const marketHoursMultiplier = (hourOfDay >= 8 && hourOfDay <= 20) ? 1.2 : 0.8;
-                const weekendMultiplier = (dayOfWeek === 0 || dayOfWeek === 6) ? 0.7 : 1.0;
-                
-                const trend = Math.sin((i / 24) * Math.PI * 2) * 0.01;
-                const randomWalk = (Math.random() - 0.5) * 0.02;
-                const volatility = 0.03 + (Math.random() * 0.02);
-                
-                const change = (trend + randomWalk) * volatility * marketHoursMultiplier * weekendMultiplier;
-                baseValue *= (1 + change);
-                
-                history.push({
-                    timestamp,
-                    totalValue: baseValue,
-                    solValue: baseValue * 0.42 / 245.67,
-                    change24h: change * 100,
-                    volume: Math.random() * 100000 + 20000
-                });
-            }
-            
-            appState.historicalData = history;
-        }
-
-        // Portfolio Chart Implementation
+        // Chart variables
         let portfolioChart = null;
 
-        function updatePortfolioChart() {
-            const ctx = document.getElementById('portfolioChart');
-            if (!ctx || appState.historicalData.length === 0) return;
+        // Known Solana tokens for demo
+        const DEMO_TOKENS = [
+            { symbol: 'SOL', name: 'Solana', price: 98.45, change24h: 5.2, volume24h: 1250000000, logo: '🟣' },
+            { symbol: 'BONK', name: 'Bonk', price: 0.000023, change24h: -12.4, volume24h: 45000000, logo: '🚀' },
+            { symbol: 'JUP', name: 'Jupiter', price: 0.87, change24h: 8.9, volume24h: 123000000, logo: '🪐' },
+            { symbol: 'WIF', name: 'dogwifhat', price: 2.34, change24h: 15.6, volume24h: 89000000, logo: '🐕' },
+            { symbol: 'RAY', name: 'Raydium', price: 4.12, change24h: -3.2, volume24h: 67000000, logo: '⚡' }
+        ];
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function initializeApp() {
+            console.log('🚀 Initializing Cypher Analytics...');
             
-            const chartCtx = ctx.getContext('2d');
-            const timeframe = document.getElementById('chartTimeframe')?.value || '24H';
-            const mode = appState.chartMode;
+            updateAPIStatus('Online', true);
+            loadDemoData();
+            updatePortfolioChart();
+            renderAlerts();
             
-            const data = getChartData(timeframe, mode);
-            
-            if (portfolioChart) {
-                portfolioChart.destroy();
-            }
-            
-            const config = getChartConfig(data, mode);
-            portfolioChart = new Chart(chartCtx, config);
+            showToast('🎯 Cypher Analytics loaded successfully!');
+            console.log('✅ Application initialized');
         }
 
-        function getChartData(timeframe, mode) {
-            let filteredData = appState.historicalData;
-            const now = Date.now();
+        function loadDemoData() {
+            // Load demo market data
+            DEMO_TOKENS.forEach(token => {
+                appState.marketData.set(token.symbol, token);
+            });
             
-            switch (timeframe) {
-                case '1H':
-                    filteredData = appState.historicalData.slice(-1);
-                    break;
-                case '4H':
-                    filteredData = appState.historicalData.slice(-4);
-                    break;
-                case '24H':
-                    filteredData = appState.historicalData.slice(-24);
-                    break;
-                case '7D':
-                    filteredData = appState.historicalData.filter(
-                        point => point.timestamp > now - (7 * 24 * 60 * 60 * 1000)
-                    );
-                    break;
-            }
+            updateMarketStats();
+            renderTrendingTokens();
+            renderMarketMovers();
+            
+            // Update header stats
+            updateElementText('headerSolPrice', '$98.45');
+            updateElementText('headerTotalVol', '$1.2B');
+            updateElementText('headerActiveWallets', DEMO_TOKENS.length);
+            updateElementText('marketSolPrice', '$98.45');
+            updateElementText('marketVolume', '$1.2B');
+            updateElementText('marketCap', '$45.2B');
+            updateElementText('newTokens', DEMO_TOKENS.length);
+        }
 
-            const labels = filteredData.map(point => 
-                formatChartLabel(new Date(point.timestamp), timeframe)
-            );
+        // ===== WALLET FUNCTIONS =====
+        function toggleWalletMenu() {
+            const menu = document.getElementById('walletMenu');
+            menu.classList.toggle('show');
             
-            let values = filteredData.map(point => {
-                switch (mode) {
-                    case 'SOL':
-                        return point.solValue;
-                    case 'BTC':
-                        return point.totalValue / 95000;
-                    default:
-                        return point.totalValue;
+            document.addEventListener('click', function closeMenu(e) {
+                if (!e.target.closest('.wallet-dropdown')) {
+                    menu.classList.remove('show');
+                    document.removeEventListener('click', closeMenu);
                 }
             });
-
-            return { labels, values };
         }
 
-        function getChartConfig(data, mode) {
-            let label = 'Portfolio Value (USD)';
-            let color = '#ff6b6b';
-            let yAxisCallback = value => '$' + value.toLocaleString();
-            
-            if (mode === 'SOL') {
-                label = 'Portfolio Value (SOL)';
-                color = '#4ecdc4';
-                yAxisCallback = value => value.toFixed(3) + ' SOL';
-            } else if (mode === 'BTC') {
-                label = 'Portfolio Value (BTC)';
-                color = '#f7931a';
-                yAxisCallback = value => value.toFixed(6) + ' BTC';
-            }
-
-            return {
-                type: 'line',
-                data: {
-                    labels: data.labels,
-                    datasets: [{
-                        label: label,
-                        data: data.values,
-                        borderColor: color,
-                        backgroundColor: color + '20',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 0,
-                        pointHoverRadius: 6,
-                        borderWidth: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleColor: '#ffffff',
-                            bodyColor: '#ffffff',
-                            borderColor: color,
-                            borderWidth: 1
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            ticks: { color: '#888' }
-                        },
-                        y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            ticks: {
-                                color: '#888',
-                                callback: yAxisCallback
-                            }
-                        }
-                    }
-                }
-            };
-        }
-
-        function formatChartLabel(date, timeframe) {
-            switch (timeframe) {
-                case '1H':
-                case '4H':
-                    return date.getHours().toString().padStart(2, '0') + ':' + 
-                           date.getMinutes().toString().padStart(2, '0');
-                case '24H':
-                    return date.getHours().toString().padStart(2, '0') + ':00';
-                case '7D':
-                    return (date.getMonth() + 1) + '/' + date.getDate();
-                default:
-                    return date.toLocaleDateString();
-            }
-        }
-
-        // UI Functions - All defined globally
-        function switchSection(sectionName) {
-            // Update navigation
-            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
-            
-            // Update content
-            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
-            document.getElementById(sectionName)?.classList.add('active');
-            
-            // Load section-specific data
-            if (sectionName === 'whale') {
-                loadWhaleData();
-            } else if (sectionName === 'social') {
-                loadSocialData();
-            }
-        }
-
-        function connectWallet() {
-            console.log('🔗 Connecting wallet...');
-            
+        async function connectWallet(provider = 'phantom') {
             try {
-                if (typeof window.solana !== 'undefined' && window.solana.isPhantom) {
-                    window.solana.connect().then(response => {
-                        appState.wallet = response.publicKey.toString();
-                        appState.connected = true;
-                        updateWalletUI();
-                        showToast('🎉 Wallet connected successfully!');
-                    }).catch(error => {
-                        console.error('Wallet connection failed:', error);
-                        simulateWalletConnection();
-                    });
-                } else {
-                    simulateWalletConnection();
-                }
+                document.getElementById('walletMenu').classList.remove('show');
+                
+                const connectBtn = document.getElementById('connectWallet');
+                connectBtn.disabled = true;
+                connectBtn.querySelector('#walletBtnText').textContent = 'Connecting...';
+                
+                // Simulate wallet connection for demo
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                appState.wallet.connected = true;
+                appState.wallet.publicKey = 'Demo' + Math.random().toString(36).substr(2, 9);
+                appState.wallet.provider = provider;
+                appState.wallet.balance = 12.34;
+                
+                // Add demo portfolio
+                appState.portfolioData = [
+                    { symbol: 'SOL', name: 'Solana', amount: 12.34, price: 98.45, value: 1215.12, change24h: 5.2, logo: '🟣' },
+                    { symbol: 'BONK', name: 'Bonk', amount: 1000000, price: 0.000023, value: 23.00, change24h: -12.4, logo: '🚀' },
+                    { symbol: 'JUP', name: 'Jupiter', amount: 150, price: 0.87, value: 130.50, change24h: 8.9, logo: '🪐' }
+                ];
+                
+                updateWalletUI();
+                updatePortfolioStats();
+                renderTokenList();
+                
+                showToast(`🎉 ${provider.charAt(0).toUpperCase() + provider.slice(1)} connected!`);
+                
             } catch (error) {
-                console.error('Wallet connection error:', error);
-                simulateWalletConnection();
+                console.error('❌ Wallet connection failed:', error);
+                showToast('❌ Failed to connect wallet');
+            } finally {
+                const connectBtn = document.getElementById('connectWallet');
+                connectBtn.disabled = false;
+                if (!appState.wallet.connected) {
+                    connectBtn.querySelector('#walletBtnText').textContent = 'Connect Wallet';
+                }
             }
         }
 
-        function simulateWalletConnection() {
-            appState.wallet = 'Demo7BgBvyjrZX1YKz4oh9mjb8ZScatkkwb8DzFx7LoiVkM3';
-            appState.connected = true;
+        async function disconnectWallet() {
+            document.getElementById('walletMenu').classList.remove('show');
+            
+            appState.wallet.connected = false;
+            appState.wallet.publicKey = null;
+            appState.wallet.provider = null;
+            appState.wallet.balance = 0;
+            appState.portfolioData = [];
+            
             updateWalletUI();
-            showToast('🎭 Demo wallet connected!');
+            updatePortfolioStats();
+            renderTokenList();
+            
+            showToast('👋 Wallet disconnected');
         }
 
         function updateWalletUI() {
@@ -1539,46 +1468,52 @@
             const walletInfo = document.getElementById('walletInfo');
             const walletAddress = document.getElementById('walletAddress');
             const solBalance = document.getElementById('solBalance');
+            const walletBtnText = document.getElementById('walletBtnText');
             
-            if (connectBtn) connectBtn.style.display = 'none';
-            if (walletInfo) walletInfo.style.display = 'flex';
-            if (walletAddress && appState.wallet) {
-                walletAddress.textContent = 
-                    appState.wallet.slice(0, 4) + '...' + appState.wallet.slice(-4);
+            if (appState.wallet.connected) {
+                connectBtn.style.display = 'none';
+                walletInfo.style.display = 'flex';
+                
+                if (walletAddress && appState.wallet.publicKey) {
+                    walletAddress.textContent = appState.wallet.publicKey;
+                }
+                
+                if (solBalance) {
+                    solBalance.textContent = `${appState.wallet.balance.toFixed(3)} SOL`;
+                }
+            } else {
+                connectBtn.style.display = 'flex';
+                walletInfo.style.display = 'none';
+                walletBtnText.textContent = 'Connect Wallet';
             }
-            
-            const solToken = appState.portfolioData.find(t => t.symbol === 'SOL');
-            if (solBalance && solToken) {
-                solBalance.textContent = `${solToken.amount.toFixed(3)} SOL`;
-            }
         }
 
-        function updateChartMode() {
-            const chartMode = document.getElementById('chartMode')?.value || 'USD';
-            appState.chartMode = chartMode;
-            updatePortfolioChart();
-        }
-
-        function refreshPortfolio() {
-            showToast('🔄 Refreshing portfolio data...');
-            
-            // Simulate price updates
-            appState.portfolioData.forEach(token => {
-                const priceChange = (Math.random() - 0.5) * 0.02;
-                token.price *= (1 + priceChange);
-                token.value = token.amount * token.price;
-                token.change24h += (Math.random() - 0.5) * 0.5;
-            });
-            
-            updatePortfolioStats();
-            renderTokenList();
-            updatePortfolioChart();
-            
-            showToast('✅ Portfolio refreshed!');
-        }
-
+        // ===== PORTFOLIO FUNCTIONS =====
         function updatePortfolioStats() {
-            if (appState.portfolioData.length === 0) return;
+            if (appState.portfolioData.length === 0) {
+                updateElementText('totalValue', '$0.00');
+                updateElementText('pnlValue', '$0.00');
+                updateElementText('tokenCount', '0');
+                
+                const totalChange = document.getElementById('totalChange');
+                const pnlChange = document.getElementById('pnlChange');
+                
+                if (totalChange) {
+                    totalChange.innerHTML = `
+                        <i class="fas fa-chart-line"></i>
+                        <span>${appState.wallet.connected ? 'Loading...' : 'Connect wallet'}</span>
+                    `;
+                }
+                
+                if (pnlChange) {
+                    pnlChange.innerHTML = `
+                        <i class="fas fa-chart-line"></i>
+                        <span>${appState.wallet.connected ? 'Loading...' : 'Connect wallet'}</span>
+                    `;
+                }
+                
+                return;
+            }
             
             const totalValue = appState.portfolioData.reduce((sum, token) => sum + token.value, 0);
             const totalChange = appState.portfolioData.reduce((sum, token) => 
@@ -1595,9 +1530,7 @@
             })}`);
             
             updateElementText('tokenCount', appState.portfolioData.length);
-            updateElementText('alertsCount', appState.priceAlerts.length);
             
-            // Update change indicators
             const totalChangeEl = document.getElementById('totalChange');
             const pnlChangeEl = document.getElementById('pnlChange');
             
@@ -1620,7 +1553,27 @@
 
         function renderTokenList() {
             const tokenList = document.getElementById('tokenList');
-            if (!tokenList || appState.portfolioData.length === 0) return;
+            if (!tokenList) return;
+            
+            if (!appState.wallet.connected) {
+                tokenList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-wallet"></i>
+                        <p>Connect your wallet to view your token holdings</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Supports Phantom, Solflare, and other Solana wallets</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            if (appState.portfolioData.length === 0) {
+                tokenList.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                    </div>
+                `;
+                return;
+            }
             
             tokenList.innerHTML = '';
             
@@ -1633,16 +1586,11 @@
                         <div class="token-icon fallback">${token.logo || token.symbol.charAt(0)}</div>
                         <div class="token-details">
                             <h4>${token.symbol}</h4>
-                            <span>${token.amount.toLocaleString(undefined, {
-                                maximumFractionDigits: token.decimals > 6 ? 0 : 6
-                            })} ${token.symbol}</span>
+                            <span>${token.amount.toLocaleString()} ${token.symbol}</span>
                         </div>
                     </div>
                     <div class="token-stats">
-                        <div class="token-price">$${token.price.toLocaleString(undefined, {
-                            minimumFractionDigits: token.price < 0.01 ? 6 : 2,
-                            maximumFractionDigits: token.price < 0.01 ? 6 : 2
-                        })}</div>
+                        <div class="token-price">$${formatPrice(token.price)}</div>
                         <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
                             <i class="fas fa-arrow-${token.change24h >= 0 ? 'up' : 'down'}"></i>
                             <span>${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(2)}%</span>
@@ -1658,278 +1606,188 @@
             });
         }
 
-        function loadLiveActivity() {
-            const activities = [
-                {
-                    type: 'buy',
-                    title: 'Bought 250.0 JUP',
-                    details: '2 min ago',
-                    value: '$222.50',
-                    icon: 'buy'
-                },
-                {
-                    type: 'sell',
-                    title: 'Sold 15.4 RAY',
-                    details: '8 min ago',
-                    value: '$63.45',
-                    icon: 'sell'
-                },
-                {
-                    type: 'whale',
-                    title: 'Whale bought 15K SOL',
-                    details: '12 min ago',
-                    value: '$3.68M',
-                    icon: 'whale'
-                },
-                {
-                    type: 'buy',
-                    title: 'Bought 500K BONK',
-                    details: '25 min ago',
-                    value: '$22.50',
-                    icon: 'buy'
+        async function refreshPortfolio() {
+            if (!appState.wallet.connected) {
+                showToast('🔗 Connect wallet first');
+                return;
+            }
+            
+            showToast('🔄 Refreshing portfolio...');
+            
+            try {
+                // Simulate refresh delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updatePortfolioStats();
+                renderTokenList();
+                showToast('✅ Portfolio refreshed!');
+            } catch (error) {
+                console.error('❌ Failed to refresh portfolio:', error);
+                showToast('❌ Failed to refresh portfolio');
+            }
+        }
+
+        // ===== CHART FUNCTIONS =====
+        function setChartType(type) {
+            appState.currentChartType = type;
+            
+            document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('active');
+            
+            updatePortfolioChart();
+            showToast(`📊 Switched to ${type} chart`);
+        }
+
+        function toggleMA() {
+            appState.showMA = document.getElementById('showMA').checked;
+            updatePortfolioChart();
+            showToast(`📈 Moving Average ${appState.showMA ? 'enabled' : 'disabled'}`);
+        }
+
+        function toggleVolume() {
+            appState.showVolume = document.getElementById('showVolume').checked;
+            updatePortfolioChart();
+            showToast(`📊 Volume ${appState.showVolume ? 'enabled' : 'disabled'}`);
+        }
+
+        function updatePortfolioChart() {
+            const ctx = document.getElementById('portfolioChart');
+            if (!ctx) return;
+            
+            if (portfolioChart) {
+                portfolioChart.destroy();
+            }
+            
+            // Generate sample chart data
+            const data = generateChartData();
+            const labels = data.map((_, i) => `${i}h`);
+            
+            const datasets = [{
+                label: 'Portfolio Value',
+                data: data,
+                borderColor: '#ff6b6b',
+                backgroundColor: 'rgba(255, 107, 107, 0.1)',
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                borderWidth: 3
+            }];
+            
+            if (appState.showMA) {
+                const ma = calculateMovingAverage(data);
+                datasets.push({
+                    label: 'MA(20)',
+                    data: ma,
+                    borderColor: '#4ecdc4',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    borderWidth: 2,
+                    borderDash: [5, 5]
+                });
+            }
+            
+            portfolioChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels, datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#ffffff' }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: { color: '#888' }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
+                            ticks: {
+                                color: '#888',
+                                callback: value => '$' + value.toFixed(2)
+                            }
+                        }
+                    }
                 }
-            ];
-
-            renderLiveActivity(activities);
-        }
-
-        function renderLiveActivity(activities) {
-            const container = document.getElementById('liveActivity');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            activities.forEach(activity => {
-                const activityItem = document.createElement('div');
-                activityItem.className = `activity-item ${activity.type}`;
-                
-                const iconMap = {
-                    buy: 'fa-arrow-up',
-                    sell: 'fa-arrow-down',
-                    whale: 'fa-fish'
-                };
-                
-                activityItem.innerHTML = `
-                    <div class="activity-icon ${activity.icon}">
-                        <i class="fas ${iconMap[activity.icon]}"></i>
-                    </div>
-                    <div class="activity-content">
-                        <div class="activity-title">${activity.title}</div>
-                        <div class="activity-details">${activity.details}</div>
-                    </div>
-                    <div class="activity-value ${activity.type === 'buy' ? 'positive' : activity.type === 'sell' ? 'negative' : ''}">
-                        ${activity.value}
-                    </div>
-                `;
-                container.appendChild(activityItem);
             });
         }
 
-        function loadWhaleData() {
-            const movements = [
-                {
-                    type: 'buy',
-                    token: 'SOL',
-                    amount: 15000,
-                    value: 3682500,
-                    wallet: '7xKx...3mNp',
-                    timestamp: Date.now() - 300000,
-                    exchange: 'Jupiter'
-                },
-                {
-                    type: 'sell',
-                    token: 'JUP',
-                    amount: 2500000,
-                    value: 2225000,
-                    wallet: '9dF2...8kLm',
-                    timestamp: Date.now() - 900000,
-                    exchange: 'Orca'
-                },
-                {
-                    type: 'buy',
-                    token: 'RAY',
-                    amount: 485000,
-                    value: 1998200,
-                    wallet: '5hB9...7nQr',
-                    timestamp: Date.now() - 1800000,
-                    exchange: 'Raydium'
+        function generateChartData() {
+            const points = 24;
+            const data = [];
+            let baseValue = 1000;
+            
+            for (let i = 0; i < points; i++) {
+                const change = (Math.random() - 0.5) * 0.02;
+                baseValue *= (1 + change);
+                data.push(baseValue);
+            }
+            
+            return data;
+        }
+
+        function calculateMovingAverage(data, period = 20) {
+            const ma = [];
+            for (let i = 0; i < data.length; i++) {
+                if (i < period - 1) {
+                    ma.push(null);
+                } else {
+                    const sum = data.slice(i - period + 1, i + 1).reduce((acc, val) => acc + val, 0);
+                    ma.push(sum / period);
                 }
-            ];
-            
-            renderWhaleMovements(movements);
-            loadTokenWhales();
+            }
+            return ma;
         }
 
-        function renderWhaleMovements(movements) {
-            const container = document.getElementById('whaleMovements');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            movements.forEach(movement => {
-                const whaleItem = document.createElement('div');
-                whaleItem.className = 'whale-transaction';
-                
-                const timeAgo = getTimeAgo(new Date(movement.timestamp));
-                
-                whaleItem.innerHTML = `
-                    <div class="whale-icon">
-                        <i class="fas fa-fish"></i>
-                    </div>
-                    <div class="whale-details">
-                        <div class="whale-amount">
-                            ${movement.type === 'buy' ? '🟢' : '🔴'} ${movement.amount.toLocaleString()} ${movement.token}
-                        </div>
-                        <div class="whale-token">
-                            $${formatNumber(movement.value)} • ${movement.exchange}
-                        </div>
-                        <div class="whale-wallet">
-                            ${movement.wallet} • ${timeAgo}
-                        </div>
-                    </div>
-                `;
-                container.appendChild(whaleItem);
-            });
+        function updateChartMode() {
+            const chartMode = document.getElementById('chartMode')?.value || 'USD';
+            appState.chartMode = chartMode;
+            updatePortfolioChart();
+            showToast(`📊 Chart mode: ${chartMode}`);
         }
 
-        function loadTokenWhales() {
-            const whales = [
-                {
-                    token: 'SOL',
-                    wallet: '7xKx...3mNp',
-                    holdings: 185000,
-                    percentage: 0.08,
-                    recentActivity: 'bought 15K SOL'
-                },
-                {
-                    token: 'JUP',
-                    wallet: '9dF2...8kLm',
-                    holdings: 45000000,
-                    percentage: 4.5,
-                    recentActivity: 'sold 2.5M JUP'
-                }
-            ];
-            
-            renderTokenWhales(whales);
+        function updatePortfolioChartTimeframe() {
+            updatePortfolioChart();
         }
 
-        function renderTokenWhales(whales) {
-            const container = document.getElementById('tokenWhales');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            whales.forEach(whale => {
-                const whaleItem = document.createElement('div');
-                whaleItem.className = 'token-item';
-                
-                whaleItem.innerHTML = `
-                    <div class="token-info">
-                        <div class="token-icon fallback">🐋</div>
-                        <div class="token-details">
-                            <h4>${whale.wallet}</h4>
-                            <span>${whale.recentActivity}</span>
-                        </div>
-                    </div>
-                    <div class="token-stats">
-                        <div class="token-price">${formatNumber(whale.holdings)} ${whale.token}</div>
-                        <div class="token-change positive">
-                            ${whale.percentage.toFixed(1)}% of supply
-                        </div>
-                    </div>
-                `;
-                container.appendChild(whaleItem);
-            });
+        // ===== MARKET FUNCTIONS =====
+        function updateMarketStats() {
+            // Mock market stats update
+            console.log('📊 Market stats updated');
         }
 
-        function loadSocialData() {
-            const leaderboard = [
-                { wallet: '7xKx...3mNp', username: 'SolanaWhale', followers: 1250, performance: 145.2, rank: 1 },
-                { wallet: '9dF2...8kLm', username: 'DeFiKing', followers: 980, performance: 132.8, rank: 2 },
-                { wallet: '5hB9...7nQr', username: 'TokenSniper', followers: 756, performance: 128.5, rank: 3 }
-            ];
-            
-            renderSocialLeaderboard(leaderboard);
-        }
-
-        function renderSocialLeaderboard(leaderboard) {
-            const container = document.getElementById('socialLeaderboard');
-            if (!container) return;
-            
-            container.innerHTML = '';
-            
-            leaderboard.forEach((leader, index) => {
-                const item = document.createElement('div');
-                item.className = 'token-item';
-                
-                let rankClass = 'default';
-                if (index === 0) rankClass = 'gold';
-                else if (index === 1) rankClass = 'silver';
-                else if (index === 2) rankClass = 'bronze';
-                
-                item.innerHTML = `
-                    <div class="token-info">
-                        <div class="token-icon fallback" style="background: ${getRankColor(rankClass)};">${index + 1}</div>
-                        <div class="token-details">
-                            <h4>${leader.username}</h4>
-                            <span>${leader.wallet}</span>
-                        </div>
-                    </div>
-                    <div class="token-stats">
-                        <div class="token-price positive">+${leader.performance.toFixed(1)}%</div>
-                        <div class="token-change">
-                            ${leader.followers} followers
-                        </div>
-                    </div>
-                `;
-                
-                container.appendChild(item);
-            });
-        }
-
-        function loadTrendingTokens() {
-            const trending = [
-                { symbol: 'JUP', name: 'Jupiter', price: 0.89, change24h: 23.4, volume24h: 185000000, logo: '🪐' },
-                { symbol: 'WIF', name: 'dogwifhat', price: 2.34, change24h: 18.7, volume24h: 95000000, logo: '🐕' },
-                { symbol: 'BONK', name: 'Bonk', price: 0.000045, change24h: 15.2, volume24h: 67000000, logo: '🚀' },
-                { symbol: 'RAY', name: 'Raydium', price: 4.12, change24h: -2.8, volume24h: 45000000, logo: '⚡' }
-            ];
-            
-            renderTrendingTokens(trending);
-            
-            const movers = [
-                { symbol: 'POPCAT', change24h: 34.2, price: 1.89, logo: '🐱' },
-                { symbol: 'WIF', change24h: 28.7, price: 2.34, logo: '🐕' },
-                { symbol: 'STEP', change24h: -18.4, price: 0.087, logo: '👟' },
-                { symbol: 'COPE', change24h: -15.2, price: 0.034, logo: '😤' }
-            ];
-            
-            renderMarketMovers(movers);
-        }
-
-        function renderTrendingTokens(tokens) {
+        function renderTrendingTokens() {
             const container = document.getElementById('trendingTokens');
             if (!container) return;
             
             container.innerHTML = '';
             
-            tokens.forEach(token => {
+            const sortedTokens = DEMO_TOKENS
+                .sort((a, b) => b.volume24h - a.volume24h)
+                .slice(0, 5);
+            
+            sortedTokens.forEach((token, index) => {
                 const tokenItem = document.createElement('div');
                 tokenItem.className = 'token-item';
+                if (index < 3) tokenItem.classList.add('trending');
                 
                 tokenItem.innerHTML = `
                     <div class="token-info">
-                        <div class="token-icon fallback">${token.logo || token.symbol.charAt(0)}</div>
+                        <div class="token-icon fallback">${token.logo}</div>
                         <div class="token-details">
                             <h4>${token.symbol}</h4>
                             <span>Vol: ${formatNumber(token.volume24h)}</span>
                         </div>
                     </div>
                     <div class="token-stats">
-                        <div class="token-price">$${token.price.toLocaleString(undefined, {
-                            minimumFractionDigits: token.price < 0.01 ? 6 : 2,
-                            maximumFractionDigits: token.price < 0.01 ? 6 : 2
-                        })}</div>
+                        <div class="token-price">$${formatPrice(token.price)}</div>
                         <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
                             <i class="fas fa-arrow-${token.change24h >= 0 ? 'up' : 'down'}"></i>
                             <span>${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(1)}%</span>
@@ -1940,29 +1798,30 @@
             });
         }
 
-        function renderMarketMovers(tokens) {
+        function renderMarketMovers() {
             const container = document.getElementById('marketMovers');
             if (!container) return;
             
             container.innerHTML = '';
             
-            tokens.forEach(token => {
+            const movers = DEMO_TOKENS
+                .sort((a, b) => Math.abs(b.change24h) - Math.abs(a.change24h))
+                .slice(0, 5);
+            
+            movers.forEach(token => {
                 const tokenItem = document.createElement('div');
                 tokenItem.className = 'token-item';
                 
                 tokenItem.innerHTML = `
                     <div class="token-info">
-                        <div class="token-icon fallback">${token.logo || token.symbol.charAt(0)}</div>
+                        <div class="token-icon fallback">${token.logo}</div>
                         <div class="token-details">
                             <h4>${token.symbol}</h4>
                             <span>${token.change24h >= 0 ? '🚀 Gainer' : '📉 Loser'}</span>
                         </div>
                     </div>
                     <div class="token-stats">
-                        <div class="token-price">$${token.price.toLocaleString(undefined, {
-                            minimumFractionDigits: token.price < 0.01 ? 6 : 2,
-                            maximumFractionDigits: token.price < 0.01 ? 6 : 2
-                        })}</div>
+                        <div class="token-price">$${formatPrice(token.price)}</div>
                         <div class="token-change ${token.change24h >= 0 ? 'positive' : 'negative'}">
                             <i class="fas fa-arrow-${token.change24h >= 0 ? 'up' : 'down'}"></i>
                             <span>${token.change24h >= 0 ? '+' : ''}${token.change24h.toFixed(1)}%</span>
@@ -1973,106 +1832,141 @@
             });
         }
 
-        // Whale Threshold Functions
-        function setWhaleThreshold(threshold) {
-            appState.whaleThreshold = threshold;
+        // ===== ALERT FUNCTIONS =====
+        function openAlertModal() {
+            document.getElementById('alertModal').classList.add('show');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').classList.remove('show');
+        }
+
+        function selectAlertType(type) {
+            document.querySelectorAll('.alert-type-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            document.querySelector(`[data-type="${type}"]`).classList.add('selected');
+        }
+
+        function createAlert(event) {
+            event.preventDefault();
             
-            document.querySelectorAll('.threshold-btn').forEach(btn => {
-                btn.classList.remove('active');
+            const targetPrice = parseFloat(document.getElementById('alertPrice').value);
+            
+            if (!targetPrice || targetPrice <= 0) {
+                showToast('❌ Please enter a valid target price');
+                return;
+            }
+            
+            const alert = {
+                id: Date.now(),
+                type: 'price',
+                targetPrice: targetPrice,
+                created: Date.now(),
+                status: 'active'
+            };
+            
+            appState.alerts.push(alert);
+            renderAlerts();
+            closeAlertModal();
+            
+            showToast(`✅ Alert created for $${targetPrice}`);
+        }
+
+        function renderAlerts() {
+            const container = document.getElementById('priceAlerts');
+            
+            if (appState.alerts.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell"></i>
+                        <p>No price alerts set. Create your first alert!</p>
+                        <p style="font-size: 0.9rem; margin-top: 0.5rem;">Get notified when tokens hit your target prices or technical conditions</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            appState.alerts.forEach(alert => {
+                const alertCard = document.createElement('div');
+                alertCard.className = 'alert-card';
+                
+                alertCard.innerHTML = `
+                    <div class="alert-card-header">
+                        <div class="alert-card-title">Price Alert - $${alert.targetPrice}</div>
+                        <div class="alert-card-status active">Active</div>
+                    </div>
+                    <div class="alert-card-details">
+                        Created: ${new Date(alert.created).toLocaleString()}
+                    </div>
+                    <div class="alert-card-actions">
+                        <button class="alert-action-btn delete" onclick="deleteAlert(${alert.id})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(alertCard);
             });
             
-            const activeBtn = document.querySelector(`[data-threshold="${threshold}"]`);
-            if (activeBtn) {
-                activeBtn.classList.add('active');
-            }
-            
-            if (threshold === 20 || threshold === 50 || threshold === 100) {
-                document.getElementById('customThreshold').value = '';
-            }
-            
-            showToast(`Whale threshold set to ${threshold} SOL`);
+            updateElementText('alertsCount', appState.alerts.length);
         }
 
-        function setCustomThreshold() {
-            const customInput = document.getElementById('customThreshold');
-            const value = parseInt(customInput.value);
-            
-            if (value && value > 0) {
-                appState.whaleThreshold = value;
-                
-                document.querySelectorAll('.threshold-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                
-                showToast(`Custom threshold set to ${value} SOL`);
-            }
-        }
-
-        // Notification Functions
-        function toggleNotificationPanel() {
-            const panel = document.getElementById('notificationPanel');
-            panel.classList.toggle('show');
-        }
-
-        function createPriceAlert() {
-            showToast('Price alert creation coming soon!');
+        function deleteAlert(alertId) {
+            appState.alerts = appState.alerts.filter(alert => alert.id !== alertId);
+            renderAlerts();
+            showToast('🗑️ Alert deleted');
         }
 
         function requestNotificationPermission() {
             if (!('Notification' in window)) {
-                showToast('Browser notifications not supported');
+                showToast('❌ Browser notifications not supported');
                 return;
             }
             
             if (Notification.permission === 'granted') {
-                showToast('Notifications already enabled');
+                document.getElementById('notificationBtnText').textContent = 'Enabled';
+                showToast('✅ Notifications already enabled');
                 return;
             }
             
             Notification.requestPermission().then(permission => {
                 if (permission === 'granted') {
+                    document.getElementById('notificationBtnText').textContent = 'Enabled';
                     showToast('✅ Notifications enabled!');
-                    new Notification('Cypher Analytics', {
-                        body: 'Notifications are now active!',
-                        icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🎯</text></svg>'
-                    });
                 } else {
                     showToast('❌ Notifications denied');
                 }
             });
         }
 
-        // Real-time Updates
-        function startRealTimeUpdates() {
-            setInterval(() => {
-                if (appState.portfolioData.length > 0) {
-                    appState.portfolioData.forEach(token => {
-                        const priceChange = (Math.random() - 0.5) * 0.005;
-                        token.price *= (1 + priceChange);
-                        token.value = token.amount * token.price;
-                        token.change24h += (Math.random() - 0.5) * 0.1;
-                    });
-                    
-                    updatePortfolioStats();
-                    renderTokenList();
-                }
-            }, 30000);
+        // ===== NAVIGATION FUNCTIONS =====
+        function switchSection(sectionName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`[data-section="${sectionName}"]`)?.classList.add('active');
+            
+            document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+            document.getElementById(sectionName)?.classList.add('active');
+            
+            console.log(`📱 Switched to ${sectionName} section`);
         }
 
-        // Utility Functions
-        function formatNumber(num) {
-            if (num >= 1e9) return '$' + (num / 1e9).toFixed(1) + 'B';
-            if (num >= 1e6) return '$' + (num / 1e6).toFixed(1) + 'M';
-            if (num >= 1e3) return '$' + (num / 1e3).toFixed(1) + 'K';
-            return '$' + num.toFixed(0);
+        function toggleNotificationPanel() {
+            showToast('🔔 Notifications panel coming soon!');
         }
 
-        function getTimeAgo(date) {
-            const seconds = Math.floor((new Date() - date) / 1000);
-            if (seconds < 60) return seconds + 's ago';
-            if (seconds < 3600) return Math.floor(seconds / 60) + 'm ago';
-            if (seconds < 86400) return Math.floor(seconds / 3600) + 'h ago';
-            return Math.floor(seconds / 86400) + 'd ago';
+        // ===== UTILITY FUNCTIONS =====
+        function updateAPIStatus(status, isOnline = null) {
+            const statusEl = document.getElementById('apiStatus');
+            if (!statusEl) return;
+            
+            statusEl.className = `api-status ${isOnline === true ? 'online' : isOnline === false ? 'offline' : ''}`;
+            statusEl.innerHTML = `
+                <div class="api-dot"></div>
+                <span>${status}</span>
+            `;
         }
 
         function showToast(message) {
@@ -2087,13 +1981,18 @@
             if (element) element.textContent = text;
         }
 
-        function getRankColor(rankClass) {
-            switch (rankClass) {
-                case 'gold': return 'linear-gradient(45deg, #ffd700, #ffed4e)';
-                case 'silver': return 'linear-gradient(45deg, #c0c0c0, #e8e8e8)';
-                case 'bronze': return 'linear-gradient(45deg, #cd7f32, #daa520)';
-                default: return 'rgba(255, 255, 255, 0.1)';
-            }
+        function formatNumber(num) {
+            if (num >= 1e9) return '$' + (num / 1e9).toFixed(1) + 'B';
+            if (num >= 1e6) return '$' + (num / 1e6).toFixed(1) + 'M';
+            if (num >= 1e3) return '$' + (num / 1e3).toFixed(1) + 'K';
+            return '$' + num.toFixed(0);
+        }
+
+        function formatPrice(price) {
+            if (price >= 1) return price.toFixed(2);
+            if (price >= 0.01) return price.toFixed(4);
+            if (price >= 0.0001) return price.toFixed(6);
+            return price.toExponential(2);
         }
 
         console.log('🎯 Cypher Analytics loaded successfully');
