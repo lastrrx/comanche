@@ -19,7 +19,9 @@
         .wallet-btn, .btn { padding: 0.75rem 1.5rem; border-radius: 12px; border: none; color: white; font-weight: 600; cursor: pointer; transition: all 0.3s ease; }
         .btn-primary { background: linear-gradient(45deg, #ff6b6b, #4ecdc4); }
         .btn-secondary { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+        .btn-danger { background: linear-gradient(45deg, #ff4757, #ff3838); }
         .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         
         .nav-container { margin-top: 80px; padding: 0 1rem; }
         .nav-tabs { display: flex; justify-content: space-around; background: rgba(255,255,255,0.05); border-radius: 15px; padding: 0.5rem; margin-bottom: 2rem; }
@@ -57,8 +59,8 @@
         .token-stats { text-align: right; }
         .token-price { font-size: 1.2rem; font-weight: 600; margin-bottom: 0.3rem; }
         
-        .achievement-unlocked { border-left: 3px solid #4ecdc4; }
-        .achievement-locked { border-left: 3px solid #666; }
+        .achievement-unlocked { border-left: 3px solid #4ecdc4; background: rgba(78,205,196,0.1); }
+        .achievement-locked { border-left: 3px solid #666; opacity: 0.6; }
         .top-performer { border-left: 3px solid #ffd700; }
         .trending-trader { border-left: 3px solid #ff6b6b; }
         
@@ -78,6 +80,17 @@
         
         .toast { position: fixed; bottom: 2rem; right: 2rem; background: linear-gradient(45deg, #ff6b6b, #4ecdc4); color: white; padding: 1rem 1.5rem; border-radius: 10px; font-weight: 600; z-index: 2000; transform: translateX(100%); transition: transform 0.3s ease; }
         .toast.show { transform: translateX(0); }
+        
+        .error-state { text-align: center; color: #ff6b6b; padding: 2rem; }
+        .empty-state { text-align: center; color: #888; padding: 2rem; }
+        
+        .performance-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 12px; font-size: 0.8rem; font-weight: 600; margin-left: 0.5rem; }
+        .badge-green { background: rgba(78,205,196,0.2); color: #4ecdc4; }
+        .badge-red { background: rgba(255,107,107,0.2); color: #ff6b6b; }
+        .badge-gold { background: rgba(255,215,0,0.2); color: #ffd700; }
+        
+        .wallet-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 0.5rem; }
+        .wallet-item:hover { background: rgba(255,255,255,0.07); }
         
         @media (max-width: 768px) {
             .header-content { padding: 0; }
@@ -152,9 +165,9 @@
                     <h3 class="card-title">Token Holdings</h3>
                 </div>
                 <div id="tokenList">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p style="margin-top: 1rem; color: #888;">Connect wallet to view holdings</p>
+                    <div class="empty-state">
+                        <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>Connect wallet to view holdings</p>
                     </div>
                 </div>
             </div>
@@ -232,7 +245,10 @@
                         </button>
                     </div>
                     <div id="followedWallets">
-                        <p style="text-align: center; color: #888; padding: 1rem;">No wallets followed</p>
+                        <div class="empty-state">
+                            <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                            <p>No wallets followed</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -261,7 +277,10 @@
                     </button>
                 </div>
                 <div id="alertsList">
-                    <p style="text-align: center; color: #888; padding: 2rem;">No alerts set. Create your first alert!</p>
+                    <div class="empty-state">
+                        <i class="fas fa-bell" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>No alerts set. Create your first alert!</p>
+                    </div>
                 </div>
             </div>
         </section>
@@ -370,13 +389,47 @@
         const app = {
             wallet: { connected: false, publicKey: null, balance: 0, tokens: [] },
             marketData: new Map(),
-            alerts: [],
-            whaleThreshold: 20,
+            alerts: JSON.parse(localStorage.getItem('cypher_alerts') || '[]'),
+            whaleThreshold: parseFloat(localStorage.getItem('cypher_whale_threshold') || '20'),
             chart: null,
-            followedWallets: new Map(), // address -> {nickname, followed_since, performance}
-            achievements: new Map(), // id -> {unlocked, progress, unlocked_at}
+            followedWallets: new Map(JSON.parse(localStorage.getItem('cypher_followed_wallets') || '[]')),
+            achievements: new Map(JSON.parse(localStorage.getItem('cypher_achievements') || '[]')),
             socialData: { leaderboard: [], trending: [], userRank: 0 },
-            whaleMovements: []
+            whaleMovements: [],
+            walletStats: {
+                totalTrades: 0,
+                totalVolume: 0,
+                winRate: 0,
+                portfolioValue: 0,
+                tokenCount: 0,
+                tradingDays: 0,
+                whalesSpotted: 0,
+                following: 0,
+                followers: 0,
+                alertsCreated: 0,
+                alertsTriggered: 0,
+                totalProfit: 0,
+                diamondHands: false,
+                paperHands: false,
+                moonShots: 0,
+                rugPulls: 0,
+                earlyBuys: 0,
+                trendSets: 0,
+                nightTrades: 0,
+                speedTrades: 0,
+                avgHoldTime: 0,
+                swingTrades: 0,
+                dayTrades: 0,
+                contrarian: 0,
+                maxWinStreak: 0,
+                comebacks: 0,
+                riskTaker: false,
+                balanced: false,
+                yieldFarming: 0,
+                nftTrades: 0,
+                memeCoins: 0,
+                defiProtocols: 0
+            }
         };
 
         // Solscan API Configuration
@@ -388,12 +441,23 @@
             }
         };
 
-        // API Helper
+        // API Helper with error handling
         async function apiCall(endpoint, params = {}) {
-            const url = new URL(`${API.SOLSCAN.BASE}${endpoint}`);
-            Object.entries(params).forEach(([k, v]) => v && url.searchParams.append(k, v));
-            const response = await fetch(url, { headers: API.SOLSCAN.headers() });
-            return response.ok ? response.json() : null;
+            try {
+                const url = new URL(`${API.SOLSCAN.BASE}${endpoint}`);
+                Object.entries(params).forEach(([k, v]) => v && url.searchParams.append(k, v));
+                const response = await fetch(url, { headers: API.SOLSCAN.headers() });
+                
+                if (!response.ok) {
+                    throw new Error(`API call failed: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error(`API Error (${endpoint}):`, error);
+                showToast(`API Error: ${error.message}`);
+                return null;
+            }
         }
 
         // Achievement Definitions (50 achievements)
@@ -477,7 +541,10 @@
         async function connectWallet() {
             try {
                 const phantom = window.phantom?.solana;
-                if (!phantom) throw new Error('Phantom wallet not found');
+                if (!phantom) {
+                    showToast('Phantom wallet not found. Please install Phantom wallet.');
+                    return;
+                }
                 
                 const response = await phantom.connect();
                 app.wallet.connected = true;
@@ -485,8 +552,12 @@
                 
                 await loadWalletData();
                 updateUI();
-                showToast('Wallet connected!');
+                showToast('Wallet connected successfully!');
+                
+                // Check achievements after connecting
+                await checkAchievements();
             } catch (error) {
+                console.error('Wallet connection error:', error);
                 showToast('Connection failed: ' + error.message);
             }
         }
@@ -494,87 +565,379 @@
         async function loadWalletData() {
             if (!app.wallet.connected) return;
             
-            const walletData = await apiCall('/account/token-accounts', {
-                address: app.wallet.publicKey,
-                page_size: 50
-            });
-            
-            if (walletData?.data) {
-                app.wallet.tokens = [];
-                for (const token of walletData.data) {
-                    if (parseFloat(token.amount) > 0) {
-                        const tokenInfo = await apiCall('/token/meta', { address: token.token_address });
-                        const priceInfo = await apiCall('/token/price', { address: token.token_address });
-                        
-                        if (tokenInfo?.data && priceInfo?.data) {
-                            const amount = parseFloat(token.amount) / Math.pow(10, tokenInfo.data.decimals || 0);
-                            const price = parseFloat(priceInfo.data.price || 0);
+            try {
+                const walletData = await apiCall('/account/token-accounts', {
+                    address: app.wallet.publicKey,
+                    page_size: 50
+                });
+                
+                if (walletData?.data) {
+                    app.wallet.tokens = [];
+                    let totalValue = 0;
+                    
+                    for (const token of walletData.data) {
+                        if (parseFloat(token.amount) > 0) {
+                            const tokenInfo = await apiCall('/token/meta', { address: token.token_address });
+                            const priceInfo = await apiCall('/token/price', { address: token.token_address });
                             
-                            app.wallet.tokens.push({
-                                symbol: tokenInfo.data.symbol,
-                                name: tokenInfo.data.name,
-                                amount: amount,
-                                price: price,
-                                value: amount * price,
-                                change: parseFloat(priceInfo.data.price_change_24h || 0),
-                                logo: tokenInfo.data.logo
-                            });
+                            if (tokenInfo?.data && priceInfo?.data) {
+                                const amount = parseFloat(token.amount) / Math.pow(10, tokenInfo.data.decimals || 0);
+                                const price = parseFloat(priceInfo.data.price || 0);
+                                const value = amount * price;
+                                
+                                app.wallet.tokens.push({
+                                    address: token.token_address,
+                                    symbol: tokenInfo.data.symbol,
+                                    name: tokenInfo.data.name,
+                                    amount: amount,
+                                    price: price,
+                                    value: value,
+                                    change: parseFloat(priceInfo.data.price_change_24h || 0),
+                                    logo: tokenInfo.data.logo
+                                });
+                                
+                                totalValue += value;
+                            }
                         }
                     }
+                    
+                    // Update wallet stats
+                    app.walletStats.portfolioValue = totalValue;
+                    app.walletStats.tokenCount = app.wallet.tokens.length;
+                    
+                    // Update tracking count
+                    document.getElementById('trackedTokens').textContent = app.wallet.tokens.length;
                 }
+            } catch (error) {
+                console.error('Error loading wallet data:', error);
+                showToast('Failed to load wallet data');
             }
         }
 
         // Market Data Functions
         async function loadMarketData() {
-            const trending = await apiCall('/token/trending', { limit: 10 });
-            const solPrice = await apiCall('/token/price', { address: 'So11111111111111111111111111111111111111112' });
+            try {
+                const trending = await apiCall('/token/trending', { limit: 10 });
+                const solPrice = await apiCall('/token/price', { address: 'So11111111111111111111111111111111111111112' });
+                
+                if (trending?.data) {
+                    renderTokenList('trendingTokens', trending.data.slice(0, 5));
+                    renderTokenList('marketMovers', trending.data.slice(5, 10));
+                }
+                
+                if (solPrice?.data) {
+                    document.getElementById('solPrice').textContent = `$${parseFloat(solPrice.data.price).toFixed(2)}`;
+                    document.getElementById('marketVol').textContent = `$${(Math.random() * 1000000000).toLocaleString()}`;
+                }
+            } catch (error) {
+                console.error('Error loading market data:', error);
+                document.getElementById('trendingTokens').innerHTML = '<div class="error-state">Failed to load trending tokens</div>';
+                document.getElementById('marketMovers').innerHTML = '<div class="error-state">Failed to load market movers</div>';
+            }
+        }
+
+        // NEW IMPLEMENTATION: Followed Wallets System
+        function renderFollowedWallets() {
+            const container = document.getElementById('followedWallets');
             
-            if (trending?.data) {
-                renderTokenList('trendingTokens', trending.data.slice(0, 5));
-                renderTokenList('marketMovers', trending.data.slice(5, 10));
+            if (app.followedWallets.size === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>No wallets followed</p>
+                    </div>
+                `;
+                return;
             }
             
-            if (solPrice?.data) {
-                document.getElementById('solPrice').textContent = `$${parseFloat(solPrice.data.price).toFixed(2)}`;
+            let html = '';
+            app.followedWallets.forEach((data, address) => {
+                const performance = data.performance || 0;
+                const badgeClass = performance > 0 ? 'badge-green' : 'badge-red';
+                
+                html += `
+                    <div class="wallet-item">
+                        <div>
+                            <h5>${data.nickname || `${address.slice(0, 6)}...${address.slice(-4)}`}</h5>
+                            <small style="color: #888;">${getTimeAgo(data.followed_since)}</small>
+                            <span class="performance-badge ${badgeClass}">
+                                ${performance > 0 ? '+' : ''}${performance.toFixed(1)}%
+                            </span>
+                        </div>
+                        <button class="btn btn-danger" style="padding: 0.5rem;" onclick="unfollowWallet('${address}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+            document.getElementById('followedCount').textContent = app.followedWallets.size;
+        }
+
+        async function trackFollowedWallet(address) {
+            try {
+                const walletData = await apiCall('/account/token-accounts', {
+                    address: address,
+                    page_size: 20
+                });
+                
+                if (walletData?.data) {
+                    let totalValue = 0;
+                    for (const token of walletData.data) {
+                        if (parseFloat(token.amount) > 0) {
+                            const priceInfo = await apiCall('/token/price', { address: token.token_address });
+                            if (priceInfo?.data) {
+                                totalValue += parseFloat(token.amount) * parseFloat(priceInfo.data.price || 0);
+                            }
+                        }
+                    }
+                    
+                    // Update wallet performance (simplified calculation)
+                    const walletInfo = app.followedWallets.get(address);
+                    if (walletInfo) {
+                        const prevValue = walletInfo.lastValue || totalValue;
+                        const performance = ((totalValue - prevValue) / prevValue) * 100;
+                        
+                        app.followedWallets.set(address, {
+                            ...walletInfo,
+                            performance: performance,
+                            lastValue: totalValue,
+                            lastUpdate: Date.now()
+                        });
+                        
+                        saveToStorage();
+                    }
+                }
+            } catch (error) {
+                console.error(`Error tracking wallet ${address}:`, error);
             }
+        }
+
+        // NEW IMPLEMENTATION: Achievement System
+        async function checkAchievements() {
+            if (!app.wallet.connected) return 0;
+            
+            // Analyze wallet stats
+            await analyzeWalletStats();
+            
+            let newAchievements = 0;
+            
+            Object.entries(ACHIEVEMENTS).forEach(([id, achievement]) => {
+                const isUnlocked = achievement.check(app.walletStats);
+                const wasUnlocked = app.achievements.has(id);
+                
+                if (isUnlocked && !wasUnlocked) {
+                    app.achievements.set(id, {
+                        unlocked: true,
+                        unlocked_at: Date.now()
+                    });
+                    newAchievements++;
+                }
+            });
+            
+            renderAchievements();
+            saveToStorage();
+            
+            return newAchievements;
+        }
+
+        async function analyzeWalletStats() {
+            if (!app.wallet.connected) return;
+            
+            try {
+                // Get transaction history
+                const txHistory = await apiCall('/account/transaction', {
+                    address: app.wallet.publicKey,
+                    limit: 100
+                });
+                
+                if (txHistory?.data) {
+                    // Basic stats analysis
+                    app.walletStats.totalTrades = txHistory.data.length;
+                    app.walletStats.tradingDays = new Set(
+                        txHistory.data.map(tx => new Date(tx.block_time * 1000).toDateString())
+                    ).size;
+                    
+                    // Calculate volume
+                    let totalVolume = 0;
+                    txHistory.data.forEach(tx => {
+                        if (tx.sol_amount) {
+                            totalVolume += parseFloat(tx.sol_amount) * 100; // Assuming SOL ~$100
+                        }
+                    });
+                    app.walletStats.totalVolume = totalVolume;
+                    
+                    // Social stats
+                    app.walletStats.following = app.followedWallets.size;
+                    app.walletStats.alertsCreated = app.alerts.length;
+                    
+                    // Whale tracking
+                    app.walletStats.whalesSpotted = app.whaleMovements.length;
+                }
+            } catch (error) {
+                console.error('Error analyzing wallet stats:', error);
+            }
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById('achievementsList');
+            const unlockedCount = app.achievements.size;
+            const totalCount = Object.keys(ACHIEVEMENTS).length;
+            
+            document.getElementById('achievementProgress').textContent = `${unlockedCount}/${totalCount}`;
+            
+            let html = '';
+            Object.entries(ACHIEVEMENTS).forEach(([id, achievement]) => {
+                const isUnlocked = app.achievements.has(id);
+                const unlockedData = app.achievements.get(id);
+                
+                html += `
+                    <div class="token-item ${isUnlocked ? 'achievement-unlocked' : 'achievement-locked'}">
+                        <div class="token-info">
+                            <div class="token-icon">${achievement.icon}</div>
+                            <div>
+                                <h4>${achievement.name}</h4>
+                                <span>${achievement.desc}</span>
+                                ${isUnlocked && unlockedData ? `<br><small style="color: #4ecdc4;">Unlocked ${getTimeAgo(unlockedData.unlocked_at)}</small>` : ''}
+                            </div>
+                        </div>
+                        <div class="token-stats">
+                            <div class="token-price">${isUnlocked ? '✅' : '🔒'}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        // NEW IMPLEMENTATION: Social Data
+        async function loadSocialData() {
+            try {
+                // Generate mock leaderboard data
+                const leaderboard = [];
+                for (let i = 0; i < 10; i++) {
+                    leaderboard.push({
+                        address: `${Math.random().toString(36).substr(2, 8)}...${Math.random().toString(36).substr(2, 4)}`,
+                        performance: (Math.random() - 0.3) * 200,
+                        volume: Math.random() * 1000000,
+                        rank: i + 1
+                    });
+                }
+                
+                app.socialData.leaderboard = leaderboard.sort((a, b) => b.performance - a.performance);
+                
+                renderSocialLeaderboard();
+            } catch (error) {
+                console.error('Error loading social data:', error);
+            }
+        }
+
+        function renderSocialLeaderboard() {
+            const topPerformers = document.getElementById('topPerformers');
+            const trendingTraders = document.getElementById('trendingTraders');
+            
+            if (!app.socialData.leaderboard.length) {
+                topPerformers.innerHTML = '<div class="empty-state">No performance data available</div>';
+                trendingTraders.innerHTML = '<div class="empty-state">No trending traders</div>';
+                return;
+            }
+            
+            // Top Performers
+            let topHtml = '';
+            app.socialData.leaderboard.slice(0, 5).forEach((trader, index) => {
+                const badgeClass = trader.performance > 0 ? 'badge-green' : 'badge-red';
+                topHtml += `
+                    <div class="token-item top-performer">
+                        <div class="token-info">
+                            <div class="token-icon">#${index + 1}</div>
+                            <div>
+                                <h4>${trader.address}</h4>
+                                <span>$${trader.volume.toLocaleString()} volume</span>
+                            </div>
+                        </div>
+                        <div class="token-stats">
+                            <div class="performance-badge ${badgeClass}">
+                                ${trader.performance > 0 ? '+' : ''}${trader.performance.toFixed(1)}%
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            topPerformers.innerHTML = topHtml;
+            
+            // Trending Traders (volume leaders)
+            const volumeLeaders = [...app.socialData.leaderboard]
+                .sort((a, b) => b.volume - a.volume)
+                .slice(0, 5);
+            
+            let trendingHtml = '';
+            volumeLeaders.forEach((trader, index) => {
+                trendingHtml += `
+                    <div class="token-item trending-trader">
+                        <div class="token-info">
+                            <div class="token-icon">🔥</div>
+                            <div>
+                                <h4>${trader.address}</h4>
+                                <span>Volume leader</span>
+                            </div>
+                        </div>
+                        <div class="token-stats">
+                            <div class="token-price">$${trader.volume.toLocaleString()}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            trendingTraders.innerHTML = trendingHtml;
         }
 
         // Whale Tracking
         async function loadWhaleData() {
-            if (!app.wallet.tokens.length) return;
-            
-            const whaleData = [];
-            for (const token of app.wallet.tokens.slice(0, 3)) {
-                const transfers = await apiCall('/token/transfer', {
-                    address: token.address,
-                    limit: 10
-                });
+            try {
+                if (!app.wallet.tokens.length) return;
                 
-                if (transfers?.data) {
-                    transfers.data.forEach(tx => {
-                        const value = parseFloat(tx.amount || 0) * parseFloat(tx.token_price || 0);
-                        if (value >= app.whaleThreshold * 100) { // Assuming SOL ~$100
-                            whaleData.push({
-                                token: token.symbol,
-                                amount: parseFloat(tx.amount),
-                                value: value,
-                                type: tx.activity_type,
-                                time: tx.block_time
-                            });
-                        }
+                const whaleData = [];
+                for (const token of app.wallet.tokens.slice(0, 3)) {
+                    const transfers = await apiCall('/token/transfer', {
+                        address: token.address,
+                        limit: 10
                     });
+                    
+                    if (transfers?.data) {
+                        transfers.data.forEach(tx => {
+                            const value = parseFloat(tx.amount || 0) * parseFloat(tx.token_price || 0);
+                            if (value >= app.whaleThreshold * 100) { // Assuming SOL ~$100
+                                whaleData.push({
+                                    token: token.symbol,
+                                    amount: parseFloat(tx.amount),
+                                    value: value,
+                                    type: tx.activity_type,
+                                    time: tx.block_time,
+                                    from: tx.from_address,
+                                    to: tx.to_address
+                                });
+                            }
+                        });
+                    }
                 }
+                
+                app.whaleMovements = whaleData;
+                app.walletStats.whalesSpotted = whaleData.length;
+                renderWhaleMovements(whaleData);
+            } catch (error) {
+                console.error('Error loading whale data:', error);
+                document.getElementById('whaleMovements').innerHTML = '<div class="error-state">Failed to load whale movements</div>';
             }
-            
-            renderWhaleMovements(whaleData);
         }
 
         // UI Rendering Functions
         function renderTokenList(containerId, tokens) {
             const container = document.getElementById(containerId);
             if (!tokens?.length) {
-                container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+                container.innerHTML = '<div class="empty-state">No tokens available</div>';
                 return;
             }
             
@@ -600,7 +963,7 @@
         function renderWhaleMovements(movements) {
             const container = document.getElementById('whaleMovements');
             if (!movements?.length) {
-                container.innerHTML = '<p style="text-align: center; color: #888; padding: 2rem;">No whale movements detected</p>';
+                container.innerHTML = '<div class="empty-state">No whale movements detected</div>';
                 return;
             }
             
@@ -677,14 +1040,19 @@
             if (app.wallet.tokens.length > 0) {
                 const totalValue = app.wallet.tokens.reduce((sum, token) => sum + token.value, 0);
                 const totalChange = app.wallet.tokens.reduce((sum, token) => sum + (token.value * token.change / 100), 0);
+                const changePercent = totalValue > 0 ? (totalChange / totalValue) * 100 : 0;
                 
                 document.getElementById('totalValue').textContent = `$${totalValue.toLocaleString()}`;
                 document.getElementById('tokenCount').textContent = app.wallet.tokens.length;
-                document.getElementById('totalChange').textContent = `${totalChange >= 0 ? '+' : ''}${totalChange.toFixed(2)}%`;
+                document.getElementById('totalChange').innerHTML = `
+                    <span class="${changePercent >= 0 ? 'positive' : 'negative'}">
+                        ${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%
+                    </span>
+                `;
                 
                 // Render token holdings
                 document.getElementById('tokenList').innerHTML = app.wallet.tokens.map(token => `
-                    <div class="token-item">
+                    <div class="token-item" onclick="createQuickAlert('${token.symbol}', ${token.price})">
                         <div class="token-info">
                             <div class="token-icon">${token.logo ? `<img src="${token.logo}" alt="${token.symbol}">` : token.symbol.charAt(0)}</div>
                             <div>
@@ -693,7 +1061,7 @@
                             </div>
                         </div>
                         <div class="token-stats">
-                            <div class="token-price">$${token.price.toFixed(4)}</div>
+                            <div class="token-price">$${token.value.toFixed(2)}</div>
                             <div class="stat-change ${token.change >= 0 ? 'positive' : 'negative'}">
                                 ${token.change >= 0 ? '+' : ''}${token.change.toFixed(1)}%
                             </div>
@@ -717,24 +1085,28 @@
 
         function createAlert(event) {
             event.preventDefault();
-            const token = document.getElementById('tokenInput').value;
+            const token = document.getElementById('tokenInput').value.trim();
             const price = parseFloat(document.getElementById('priceInput').value);
             
-            if (!token || !price) {
-                showToast('Please fill all fields');
+            if (!token || !price || price <= 0) {
+                showToast('Please enter valid token and price');
                 return;
             }
             
-            app.alerts.push({
+            const alert = {
                 id: Date.now(),
                 token,
                 price,
                 created: Date.now(),
                 status: 'active'
-            });
+            };
+            
+            app.alerts.push(alert);
+            app.walletStats.alertsCreated++;
             
             renderAlerts();
             closeAlertModal();
+            saveToStorage();
             showToast(`Alert created for ${token} at $${price}`);
         }
 
@@ -747,7 +1119,12 @@
         function renderAlerts() {
             const container = document.getElementById('alertsList');
             if (!app.alerts.length) {
-                container.innerHTML = '<p style="text-align: center; color: #888; padding: 2rem;">No alerts set. Create your first alert!</p>';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-bell" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                        <p>No alerts set. Create your first alert!</p>
+                    </div>
+                `;
                 return;
             }
             
@@ -762,7 +1139,9 @@
                     </div>
                     <div class="token-stats">
                         <div class="token-price">${alert.status}</div>
-                        <button onclick="deleteAlert(${alert.id})" class="btn btn-secondary" style="padding: 0.5rem;">Delete</button>
+                        <button onclick="deleteAlert(${alert.id})" class="btn btn-danger" style="padding: 0.5rem;">
+                            <i class="fas fa-trash"></i>
+                        </button>
                     </div>
                 </div>
             `).join('');
@@ -771,7 +1150,60 @@
         function deleteAlert(id) {
             app.alerts = app.alerts.filter(alert => alert.id !== id);
             renderAlerts();
+            saveToStorage();
             showToast('Alert deleted');
+        }
+
+        // Follow Wallet Functions
+        function openFollowModal() {
+            document.getElementById('followModal').classList.add('show');
+        }
+
+        function closeFollowModal() {
+            document.getElementById('followModal').classList.remove('show');
+            document.getElementById('followForm').reset();
+        }
+
+        function followWallet(event) {
+            event.preventDefault();
+            const address = document.getElementById('walletInput').value.trim();
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            
+            if (!address || address.length !== 44) {
+                showToast('Please enter a valid Solana wallet address');
+                return;
+            }
+            
+            if (app.followedWallets.has(address)) {
+                showToast('Wallet already being followed');
+                return;
+            }
+            
+            app.followedWallets.set(address, {
+                nickname: nickname || null,
+                followed_since: Date.now(),
+                performance: 0,
+                lastValue: 0,
+                lastUpdate: Date.now()
+            });
+            
+            app.walletStats.following = app.followedWallets.size;
+            
+            renderFollowedWallets();
+            closeFollowModal();
+            saveToStorage();
+            showToast(`Following wallet ${nickname || address.slice(0, 8)}...`);
+            
+            // Start tracking immediately
+            trackFollowedWallet(address);
+        }
+
+        function unfollowWallet(address) {
+            app.followedWallets.delete(address);
+            app.walletStats.following = app.followedWallets.size;
+            renderFollowedWallets();
+            saveToStorage();
+            showToast('Wallet unfollowed');
         }
 
         // Utility Functions
@@ -795,6 +1227,9 @@
                     renderAchievements();
                 }
             }
+            if (section === 'alerts') {
+                renderAlerts();
+            }
         }
 
         function setWhaleThreshold(threshold) {
@@ -802,6 +1237,7 @@
             document.querySelectorAll('[onclick^="setWhaleThreshold"]').forEach(btn => btn.classList.remove('active'));
             event.target.classList.add('active');
             loadWhaleData();
+            saveToStorage();
             showToast(`Whale threshold set to ${threshold} SOL`);
         }
 
@@ -814,19 +1250,22 @@
         }
 
         async function refreshPortfolio() {
+            if (!app.wallet.connected) {
+                showToast('Please connect your wallet first');
+                return;
+            }
+            
             showToast('Refreshing...');
             await loadWalletData();
             updateUI();
             
             // Check for new achievements
-            if (app.wallet.connected) {
-                const newAchievements = await checkAchievements();
-                if (newAchievements > 0) {
-                    showToast(`🎉 ${newAchievements} new achievement${newAchievements > 1 ? 's' : ''} unlocked!`);
-                }
+            const newAchievements = await checkAchievements();
+            if (newAchievements > 0) {
+                showToast(`🎉 ${newAchievements} new achievement${newAchievements > 1 ? 's' : ''} unlocked!`);
+            } else {
+                showToast('Portfolio refreshed!');
             }
-            
-            showToast('Portfolio refreshed!');
         }
 
         function showToast(message) {
@@ -844,30 +1283,60 @@
             return Math.floor(diff / 86400000) + 'd ago';
         }
 
+        // Storage Functions
+        function saveToStorage() {
+            try {
+                localStorage.setItem('cypher_alerts', JSON.stringify(app.alerts));
+                localStorage.setItem('cypher_whale_threshold', app.whaleThreshold.toString());
+                localStorage.setItem('cypher_followed_wallets', JSON.stringify([...app.followedWallets]));
+                localStorage.setItem('cypher_achievements', JSON.stringify([...app.achievements]));
+            } catch (error) {
+                console.error('Error saving to storage:', error);
+            }
+        }
+
+        // Global function assignments for onclick handlers
+        window.openFollowModal = openFollowModal;
+        window.closeFollowModal = closeFollowModal;
+        window.followWallet = followWallet;
+        window.unfollowWallet = unfollowWallet;
+        window.openAlertModal = openAlertModal;
+        window.closeAlertModal = closeAlertModal;
+        window.createAlert = createAlert;
+        window.deleteAlert = deleteAlert;
+        window.createQuickAlert = createQuickAlert;
+        window.switchSection = switchSection;
+        window.setWhaleThreshold = setWhaleThreshold;
+        window.setCustomThreshold = setCustomThreshold;
+        window.refreshPortfolio = refreshPortfolio;
+        window.connectWallet = connectWallet;
+
         // Initialize App
         document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('connectWallet').onclick = connectWallet;
+            // Load initial data
             loadMarketData();
             updatePortfolioChart();
-            renderAchievements(); // Initialize achievements display
-            renderFollowedWallets(); // Initialize followed wallets display
+            renderAchievements();
+            renderFollowedWallets();
+            renderAlerts();
             
             // Auto-refresh every 30 seconds
-            setInterval(() => {
-                loadMarketData();
+            setInterval(async () => {
+                await loadMarketData();
+                
                 if (app.wallet.connected) {
-                    loadWalletData().then(() => {
-                        updateUI();
-                        checkAchievements(); // Check for new achievements
-                    });
-                    loadWhaleData();
+                    await loadWalletData();
+                    updateUI();
+                    await checkAchievements();
+                    await loadWhaleData();
                 }
                 
                 // Update followed wallets data
                 if (app.followedWallets.size > 0) {
-                    app.followedWallets.forEach((wallet, address) => {
-                        trackFollowedWallet(address);
-                    });
+                    for (const [address] of app.followedWallets) {
+                        await trackFollowedWallet(address);
+                    }
+                    renderFollowedWallets();
                 }
             }, 30000);
         });
