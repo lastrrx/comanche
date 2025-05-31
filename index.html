@@ -3,40 +3,175 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cypher - Portfolio Analytics</title>
+    <title>Cypher - Advanced Solana Portfolio Analytics</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="header">
-        <div class="header-content">
-            <div class="logo"><i class="fas fa-chart-line"></i> Cypher</div>
-            <div class="wallet-section">
-                <span style="font-size: 0.7rem; color: #888;">Free Solana Analytics</span>
-                <button id="connectWallet" class="wallet-btn btn-primary">
-                    <i class="fas fa-plug"></i> <span>Connect Wallet</span>
+    <!-- Welcome/Onboarding Modal -->
+    <div id="welcomeModal" class="modal welcome-modal">
+        <div class="modal-content welcome-content">
+            <div class="welcome-header">
+                <div class="logo-large"><i class="fas fa-chart-line"></i> Cypher</div>
+                <p>Advanced Solana Portfolio Analytics</p>
+            </div>
+            
+            <div class="onboarding-step active" data-step="1">
+                <div class="step-indicator">
+                    <div class="step-number">1</div>
+                    <h3>Welcome to Cypher</h3>
+                </div>
+                <div class="step-content">
+                    <div class="feature-preview">
+                        <i class="fas fa-rocket step-icon"></i>
+                        <h4>Professional Portfolio Tracking</h4>
+                        <p>Track your Solana investments with real-time analytics, performance metrics, and risk assessment tools.</p>
+                    </div>
+                    <ul class="feature-list">
+                        <li><i class="fas fa-check"></i> Real-time portfolio valuation</li>
+                        <li><i class="fas fa-check"></i> Advanced performance charts</li>
+                        <li><i class="fas fa-check"></i> Risk analysis & diversification scores</li>
+                        <li><i class="fas fa-check"></i> Whale tracking & social trading</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="onboarding-step" data-step="2">
+                <div class="step-indicator">
+                    <div class="step-number">2</div>
+                    <h3>Connect Your Wallet</h3>
+                </div>
+                <div class="step-content">
+                    <div class="wallet-setup">
+                        <div class="wallet-option" onclick="connectWalletFromOnboarding('phantom')">
+                            <img src="https://phantom.app/img/phantom-logo.png" alt="Phantom" onerror="this.style.display='none'">
+                            <div>
+                                <h4>Phantom Wallet</h4>
+                                <p>Most popular Solana wallet</p>
+                            </div>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="wallet-option" onclick="connectWalletFromOnboarding('solflare')">
+                            <div class="wallet-icon">S</div>
+                            <div>
+                                <h4>Solflare</h4>
+                                <p>Advanced features & security</p>
+                            </div>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                        <div class="wallet-option" onclick="connectWalletFromOnboarding('backpack')">
+                            <div class="wallet-icon">B</div>
+                            <div>
+                                <h4>Backpack</h4>
+                                <p>Multi-chain support</p>
+                            </div>
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                    <div class="security-note">
+                        <i class="fas fa-shield-alt"></i>
+                        <p>Cypher never stores your private keys. We only read your public wallet data.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="onboarding-step" data-step="3">
+                <div class="step-indicator">
+                    <div class="step-number">3</div>
+                    <h3>Explore Features</h3>
+                </div>
+                <div class="step-content">
+                    <div class="feature-tour">
+                        <div class="tour-item">
+                            <i class="fas fa-chart-pie"></i>
+                            <h4>Portfolio Dashboard</h4>
+                            <p>View your complete portfolio performance, asset allocation, and historical trends.</p>
+                        </div>
+                        <div class="tour-item">
+                            <i class="fas fa-whale"></i>
+                            <h4>Whale Tracking</h4>
+                            <p>Monitor large transactions and follow successful traders in real-time.</p>
+                        </div>
+                        <div class="tour-item">
+                            <i class="fas fa-bell"></i>
+                            <h4>Smart Alerts</h4>
+                            <p>Set price alerts, volume spikes, and social sentiment notifications.</p>
+                        </div>
+                        <div class="tour-item">
+                            <i class="fas fa-trophy"></i>
+                            <h4>Achievements</h4>
+                            <p>Unlock 150+ achievements and track your trading milestones.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="onboarding-controls">
+                <button class="btn btn-secondary" onclick="previousOnboardingStep()" id="prevBtn" style="display: none;">
+                    <i class="fas fa-arrow-left"></i> Previous
+                </button>
+                <div class="step-dots">
+                    <div class="dot active" data-step="1"></div>
+                    <div class="dot" data-step="2"></div>
+                    <div class="dot" data-step="3"></div>
+                </div>
+                <button class="btn btn-primary" onclick="nextOnboardingStep()" id="nextBtn">
+                    Next <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
     </div>
 
+    <!-- Main App Header -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-chart-line"></i> Cypher
+                <span class="version-badge">v2.0</span>
+            </div>
+            <div class="header-actions">
+                <div class="search-container">
+                    <input type="text" id="globalSearch" class="search-input" placeholder="Search tokens...">
+                    <i class="fas fa-search search-icon"></i>
+                    <div id="searchResults" class="search-results"></div>
+                </div>
+                <div class="wallet-section">
+                    <div class="network-indicator">
+                        <span class="network-dot"></span>
+                        <span>Mainnet</span>
+                    </div>
+                    <button id="connectWallet" class="wallet-btn btn-primary">
+                        <i class="fas fa-plug"></i> <span>Connect Wallet</span>
+                    </button>
+                    <button id="helpBtn" class="icon-btn" onclick="showHelp()" title="Help & Tutorial">
+                        <i class="fas fa-question-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
     <div class="nav-container">
         <div class="nav-tabs">
-            <div class="nav-tab active" onclick="switchSection('portfolio')">
+            <div class="nav-tab active" onclick="switchSection('portfolio')" data-tooltip="View your portfolio performance and holdings">
                 <i class="fas fa-chart-pie"></i> Portfolio
             </div>
-            <div class="nav-tab" onclick="switchSection('market')">
+            <div class="nav-tab" onclick="switchSection('analytics')" data-tooltip="Advanced trading analytics and insights">
+                <i class="fas fa-brain"></i> Analytics
+            </div>
+            <div class="nav-tab" onclick="switchSection('market')" data-tooltip="Market overview and trending tokens">
                 <i class="fas fa-globe"></i> Market
             </div>
-            <div class="nav-tab" onclick="switchSection('whale')">
+            <div class="nav-tab" onclick="switchSection('whale')" data-tooltip="Whale tracking and social trading">
                 <i class="fas fa-fish"></i> Whale
             </div>
-            <div class="nav-tab" onclick="switchSection('alerts')">
+            <div class="nav-tab" onclick="switchSection('alerts')" data-tooltip="Price alerts and notifications">
                 <i class="fas fa-bell"></i> Alerts
             </div>
-            <div class="nav-tab" onclick="switchSection('social')">
+            <div class="nav-tab" onclick="switchSection('social')" data-tooltip="Social features and achievements">
                 <i class="fas fa-users"></i> Social
             </div>
         </div>
@@ -45,225 +180,667 @@
     <main class="content">
         <!-- Portfolio Section -->
         <section id="portfolio" class="section active">
-            <div class="grid grid-2 stat-cards">
-                <div class="stat-card">
+            <!-- Quick Stats Row -->
+            <div class="grid grid-4 stat-cards">
+                <div class="stat-card primary">
+                    <div class="stat-icon"><i class="fas fa-wallet"></i></div>
                     <div class="stat-value" id="totalValue">$0.00</div>
-                    <div class="stat-label">Total Value</div>
-                    <div class="stat-change"><span id="totalChange">Connect wallet</span></div>
+                    <div class="stat-label">Portfolio Value</div>
+                    <div class="stat-change"><span id="totalChange">Connect wallet to view</span></div>
                 </div>
                 <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-coins"></i></div>
                     <div class="stat-value" id="tokenCount">0</div>
                     <div class="stat-label">Holdings</div>
                     <div class="stat-change"><span>Tokens</span></div>
                 </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-value" id="portfolioGain">0%</div>
+                    <div class="stat-label">24h Change</div>
+                    <div class="stat-change"><span id="gainAmount">$0.00</span></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="stat-value" id="riskScore">-</div>
+                    <div class="stat-label">Risk Score</div>
+                    <div class="stat-change"><span id="riskLevel">Not analyzed</span></div>
+                </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Portfolio Performance</h3>
-                    <button class="btn btn-secondary" onclick="refreshPortfolio()">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
+            <!-- Charts Row -->
+            <div class="charts-grid">
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Portfolio Performance</h3>
+                        <div class="chart-controls">
+                            <button class="btn btn-sm" onclick="changeChartTimeframe('1D')">1D</button>
+                            <button class="btn btn-sm active" onclick="changeChartTimeframe('7D')">7D</button>
+                            <button class="btn btn-sm" onclick="changeChartTimeframe('30D')">30D</button>
+                            <button class="btn btn-sm" onclick="changeChartTimeframe('1Y')">1Y</button>
+                            <button class="btn btn-secondary" onclick="refreshPortfolio()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="portfolioChart"></canvas>
+                    </div>
                 </div>
-                <div class="chart-container">
-                    <canvas id="portfolioChart"></canvas>
+
+                <div class="card chart-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Asset Allocation</h3>
+                        <div class="allocation-legend" id="allocationLegend"></div>
+                    </div>
+                    <div class="chart-container allocation-chart">
+                        <canvas id="allocationChart"></canvas>
+                        <div class="allocation-center">
+                            <div class="total-value" id="centerValue">$0</div>
+                            <div class="allocation-label">Total Value</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Token Holdings</h3>
+            <!-- Holdings & Analysis -->
+            <div class="portfolio-grid">
+                <div class="card holdings-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Token Holdings</h3>
+                        <div class="holdings-controls">
+                            <select class="form-select" id="sortHoldings" onchange="sortHoldings()">
+                                <option value="value">Sort by Value</option>
+                                <option value="change">Sort by Change</option>
+                                <option value="alphabetical">Sort A-Z</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="exportHoldings()">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                    <div id="tokenList" class="token-list">
+                        <div class="empty-state">
+                            <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                            <h4>No Holdings Found</h4>
+                            <p>Connect your wallet to view your token holdings and start tracking your portfolio performance.</p>
+                            <button class="btn btn-primary" onclick="connectWallet()">
+                                <i class="fas fa-plug"></i> Connect Wallet
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                <div id="tokenList">
-                    <div class="empty-state">
-                        <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                        <p>Connect wallet to view holdings</p>
+
+                <div class="card analysis-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Portfolio Analysis</h3>
+                        <button class="btn btn-secondary" onclick="generateAnalysisReport()">
+                            <i class="fas fa-file-alt"></i> Report
+                        </button>
+                    </div>
+                    <div class="analysis-metrics">
+                        <div class="metric-row">
+                            <span class="metric-label">Diversification Score</span>
+                            <div class="metric-value">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" id="diversificationProgress" style="width: 0%"></div>
+                                </div>
+                                <span id="diversificationScore">0/100</span>
+                            </div>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Largest Position</span>
+                            <span class="metric-value" id="largestPosition">-</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Total Transactions</span>
+                            <span class="metric-value" id="totalTransactions">0</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Avg. Hold Time</span>
+                            <span class="metric-value" id="avgHoldTime">-</span>
+                        </div>
+                    </div>
+                    <div class="risk-indicators">
+                        <h4>Risk Indicators</h4>
+                        <div class="risk-item">
+                            <span>Concentration Risk</span>
+                            <span class="risk-badge" id="concentrationRisk">Low</span>
+                        </div>
+                        <div class="risk-item">
+                            <span>Volatility Risk</span>
+                            <span class="risk-badge" id="volatilityRisk">Medium</span>
+                        </div>
+                        <div class="risk-item">
+                            <span>Liquidity Risk</span>
+                            <span class="risk-badge" id="liquidityRisk">Low</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Market Section -->
+        <!-- Analytics Section (New) -->
+        <section id="analytics" class="section">
+            <div class="analytics-header">
+                <h2>Advanced Analytics</h2>
+                <p>Deep insights into your trading performance and market opportunities</p>
+            </div>
+
+            <div class="grid grid-3 analytics-cards">
+                <div class="stat-card analytics">
+                    <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
+                    <div class="stat-value" id="winRate">0%</div>
+                    <div class="stat-label">Win Rate</div>
+                    <div class="stat-change"><span id="totalTrades">0 trades</span></div>
+                </div>
+                <div class="stat-card analytics">
+                    <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                    <div class="stat-value" id="bestPerformer">-</div>
+                    <div class="stat-label">Best Performer</div>
+                    <div class="stat-change"><span id="bestGain">+0%</span></div>
+                </div>
+                <div class="stat-card analytics">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-value" id="sharpeRatio">0.0</div>
+                    <div class="stat-label">Sharpe Ratio</div>
+                    <div class="stat-change"><span>Risk-adjusted return</span></div>
+                </div>
+            </div>
+
+            <div class="analytics-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Performance vs Benchmarks</h3>
+                        <select class="form-select" onchange="changeBenchmark(this.value)">
+                            <option value="sol">vs SOL</option>
+                            <option value="btc">vs BTC</option>
+                            <option value="eth">vs ETH</option>
+                            <option value="market">vs Market</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="benchmarkChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Trading Pattern Analysis</h3>
+                    </div>
+                    <div class="trading-patterns">
+                        <div class="pattern-item">
+                            <div class="pattern-icon"><i class="fas fa-clock"></i></div>
+                            <div class="pattern-info">
+                                <h4>Most Active Time</h4>
+                                <p id="mostActiveTime">Analyzing...</p>
+                            </div>
+                        </div>
+                        <div class="pattern-item">
+                            <div class="pattern-icon"><i class="fas fa-calendar"></i></div>
+                            <div class="pattern-info">
+                                <h4>Trading Frequency</h4>
+                                <p id="tradingFrequency">Analyzing...</p>
+                            </div>
+                        </div>
+                        <div class="pattern-item">
+                            <div class="pattern-icon"><i class="fas fa-hourglass-half"></i></div>
+                            <div class="pattern-info">
+                                <h4>Avg Position Duration</h4>
+                                <p id="avgPositionDuration">Analyzing...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Token Performance Heatmap</h3>
+                    </div>
+                    <div id="performanceHeatmap" class="heatmap-container">
+                        <div class="heatmap-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <p>Generating heatmap...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Market Section (Enhanced) -->
         <section id="market" class="section">
-            <div class="grid grid-3">
-                <div class="stat-card">
+            <div class="market-header">
+                <h2>Market Overview</h2>
+                <div class="market-controls">
+                    <input type="text" class="search-input" placeholder="Search tokens..." id="marketSearch">
+                    <select class="form-select" id="marketFilter">
+                        <option value="all">All Tokens</option>
+                        <option value="trending">Trending</option>
+                        <option value="gainers">Top Gainers</option>
+                        <option value="losers">Top Losers</option>
+                        <option value="volume">High Volume</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-4 market-stats">
+                <div class="stat-card market">
+                    <div class="stat-icon"><i class="fab fa-solana"></i></div>
                     <div class="stat-value" id="solPrice">Loading...</div>
                     <div class="stat-label">SOL Price</div>
+                    <div class="stat-change" id="solChange">...</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card market">
+                    <div class="stat-icon"><i class="fas fa-chart-bar"></i></div>
                     <div class="stat-value" id="marketVol">Loading...</div>
                     <div class="stat-label">24h Volume</div>
+                    <div class="stat-change" id="volumeChange">...</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card market">
+                    <div class="stat-icon"><i class="fas fa-coins"></i></div>
                     <div class="stat-value" id="trackedTokens">0</div>
                     <div class="stat-label">Tracked Tokens</div>
+                    <div class="stat-change"><span>Active</span></div>
+                </div>
+                <div class="stat-card market">
+                    <div class="stat-icon"><i class="fas fa-fire"></i></div>
+                    <div class="stat-value" id="marketSentiment">Neutral</div>
+                    <div class="stat-label">Market Sentiment</div>
+                    <div class="stat-change" id="sentimentScore">50/100</div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                <div class="card">
+            <div class="market-grid">
+                <div class="card market-trends">
                     <div class="card-header">
                         <h3 class="card-title">Trending Tokens</h3>
+                        <div class="trend-filters">
+                            <button class="btn btn-sm active" onclick="filterTrending('1h')">1H</button>
+                            <button class="btn btn-sm" onclick="filterTrending('24h')">24H</button>
+                            <button class="btn btn-sm" onclick="filterTrending('7d')">7D</button>
+                        </div>
                     </div>
-                    <div id="trendingTokens">
+                    <div id="trendingTokens" class="trending-list">
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
                 </div>
-                <div class="card">
+
+                <div class="card market-movers">
                     <div class="card-header">
                         <h3 class="card-title">Market Movers</h3>
+                        <div class="mover-tabs">
+                            <button class="tab-btn active" onclick="showMovers('gainers')">Gainers</button>
+                            <button class="tab-btn" onclick="showMovers('losers')">Losers</button>
+                        </div>
                     </div>
-                    <div id="marketMovers">
+                    <div id="marketMovers" class="movers-list">
                         <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+
+                <div class="card market-overview">
+                    <div class="card-header">
+                        <h3 class="card-title">Market Overview</h3>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="marketOverviewChart"></canvas>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Whale Section -->
+        <!-- Whale Section (Enhanced) -->
         <section id="whale" class="section">
-            <div class="grid grid-3">
-                <div class="stat-card">
+            <div class="whale-header">
+                <h2>Whale Tracking & Social Trading</h2>
+                <p>Monitor large transactions and follow successful traders</p>
+            </div>
+
+            <div class="grid grid-4 whale-stats">
+                <div class="stat-card whale">
+                    <div class="stat-icon"><i class="fas fa-fish"></i></div>
                     <div class="stat-value" id="whaleCount">0</div>
                     <div class="stat-label">Whale Transactions</div>
+                    <div class="stat-change"><span>Last 24h</span></div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card whale">
+                    <div class="stat-icon"><i class="fas fa-dollar-sign"></i></div>
                     <div class="stat-value" id="whaleVol">$0</div>
                     <div class="stat-label">Whale Volume</div>
+                    <div class="stat-change" id="whaleVolChange">...</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card whale">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
                     <div class="stat-value" id="followedCount">0</div>
                     <div class="stat-label">Followed Wallets</div>
+                    <div class="stat-change"><span>Active</span></div>
+                </div>
+                <div class="stat-card whale">
+                    <div class="stat-icon"><i class="fas fa-copy"></i></div>
+                    <div class="stat-value" id="copyTrades">0</div>
+                    <div class="stat-label">Copy Trades</div>
+                    <div class="stat-change"><span>This month</span></div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
-                <div class="card">
+            <div class="whale-grid">
+                <div class="card whale-movements">
                     <div class="card-header">
                         <h3 class="card-title">Live Whale Movements</h3>
+                        <div class="whale-filters">
+                            <select class="form-select" onchange="filterWhaleMovements(this.value)">
+                                <option value="all">All Tokens</option>
+                                <option value="holdings">My Holdings Only</option>
+                                <option value="trending">Trending Tokens</option>
+                            </select>
+                            <button class="btn btn-secondary" onclick="refreshWhaleData()">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div id="whaleMovements">
+                    <div id="whaleMovements" class="whale-feed">
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card followed-wallets">
                     <div class="card-header">
                         <h3 class="card-title">Followed Wallets</h3>
                         <button class="btn btn-primary" onclick="openFollowModal()">
                             <i class="fas fa-plus"></i> Follow
                         </button>
                     </div>
-                    <div id="followedWallets">
+                    <div id="followedWallets" class="wallets-list">
                         <div class="empty-state">
                             <i class="fas fa-users" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                            <p>No wallets followed</p>
+                            <h4>No Wallets Followed</h4>
+                            <p>Start following successful traders to copy their strategies and get notifications.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card whale-settings">
+                    <div class="card-header">
+                        <h3 class="card-title">Whale Tracking Settings</h3>
+                    </div>
+                    <div class="settings-content">
+                        <div class="setting-group">
+                            <label>Transaction Threshold</label>
+                            <div class="threshold-buttons">
+                                <button class="btn btn-secondary active" onclick="setWhaleThreshold(20)">20 SOL</button>
+                                <button class="btn btn-secondary" onclick="setWhaleThreshold(50)">50 SOL</button>
+                                <button class="btn btn-secondary" onclick="setWhaleThreshold(100)">100 SOL</button>
+                                <input type="number" id="customThreshold" class="form-input" placeholder="Custom" style="width: 100px;">
+                                <button class="btn btn-primary" onclick="setCustomThreshold()">Set</button>
+                            </div>
+                        </div>
+                        <div class="setting-group">
+                            <label>Notification Preferences</label>
+                            <div class="notification-toggles">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="whaleNotifications" checked>
+                                    <span class="toggle-slider"></span>
+                                    <span>Whale Alerts</span>
+                                </label>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="followedTraderNotifications" checked>
+                                    <span class="toggle-slider"></span>
+                                    <span>Followed Trader Activity</span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Whale Settings</h3>
-                </div>
-                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                    <button class="btn btn-secondary active" onclick="setWhaleThreshold(20)">20 SOL</button>
-                    <button class="btn btn-secondary" onclick="setWhaleThreshold(50)">50 SOL</button>
-                    <button class="btn btn-secondary" onclick="setWhaleThreshold(100)">100 SOL</button>
-                    <input type="number" id="customThreshold" class="form-input" placeholder="Custom" style="width: 100px;">
-                    <button class="btn btn-primary" onclick="setCustomThreshold()">Set</button>
-                </div>
-            </div>
         </section>
 
-        <!-- Alerts Section -->
+        <!-- Alerts Section (Enhanced) -->
         <section id="alerts" class="section">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Price Alerts</h3>
-                    <button class="btn btn-primary" onclick="openAlertModal()">
-                        <i class="fas fa-plus"></i> New Alert
-                    </button>
+            <div class="alerts-header">
+                <h2>Smart Alerts & Notifications</h2>
+                <p>Stay informed with advanced price and market alerts</p>
+            </div>
+
+            <div class="grid grid-3 alerts-stats">
+                <div class="stat-card alerts">
+                    <div class="stat-icon"><i class="fas fa-bell"></i></div>
+                    <div class="stat-value" id="activeAlerts">0</div>
+                    <div class="stat-label">Active Alerts</div>
+                    <div class="stat-change"><span id="triggeredToday">0 triggered today</span></div>
                 </div>
-                <div id="alertsList">
-                    <div class="empty-state">
-                        <i class="fas fa-bell" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                        <p>No alerts set. Create your first alert!</p>
+                <div class="stat-card alerts">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-value" id="priceAlerts">0</div>
+                    <div class="stat-label">Price Alerts</div>
+                    <div class="stat-change"><span>Active</span></div>
+                </div>
+                <div class="stat-card alerts">
+                    <div class="stat-icon"><i class="fas fa-volume-up"></i></div>
+                    <div class="stat-value" id="volumeAlerts">0</div>
+                    <div class="stat-label">Volume Alerts</div>
+                    <div class="stat-change"><span>Monitoring</span></div>
+                </div>
+            </div>
+
+            <div class="alerts-grid">
+                <div class="card alert-creation">
+                    <div class="card-header">
+                        <h3 class="card-title">Create Alert</h3>
+                        <div class="alert-templates">
+                            <button class="btn btn-sm" onclick="useAlertTemplate('price')">Price</button>
+                            <button class="btn btn-sm" onclick="useAlertTemplate('volume')">Volume</button>
+                            <button class="btn btn-sm" onclick="useAlertTemplate('whale')">Whale</button>
+                        </div>
+                    </div>
+                    <div class="alert-form-container">
+                        <form id="quickAlertForm" class="quick-alert-form">
+                            <div class="form-row">
+                                <input type="text" id="alertToken" class="form-input" placeholder="Token symbol (e.g., SOL)" required>
+                                <select id="alertType" class="form-select" onchange="updateAlertForm()">
+                                    <option value="price_above">Price Above</option>
+                                    <option value="price_below">Price Below</option>
+                                    <option value="change_percent">% Change</option>
+                                    <option value="volume_spike">Volume Spike</option>
+                                    <option value="whale_movement">Whale Movement</option>
+                                </select>
+                            </div>
+                            <div class="form-row">
+                                <input type="number" id="alertValue" class="form-input" placeholder="Target value" step="0.000001" required>
+                                <select id="alertTimeframe" class="form-select">
+                                    <option value="instant">Instant</option>
+                                    <option value="5m">5 Minutes</option>
+                                    <option value="1h">1 Hour</option>
+                                    <option value="24h">24 Hours</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary full-width">
+                                <i class="fas fa-plus"></i> Create Alert
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="card active-alerts">
+                    <div class="card-header">
+                        <h3 class="card-title">Active Alerts</h3>
+                        <div class="alert-actions">
+                            <button class="btn btn-secondary" onclick="pauseAllAlerts()">
+                                <i class="fas fa-pause"></i> Pause All
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportAlerts()">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                    <div id="alertsList" class="alerts-list">
+                        <div class="empty-state">
+                            <i class="fas fa-bell" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                            <h4>No Active Alerts</h4>
+                            <p>Create your first alert to get notified of important market movements.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card alert-history">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Notifications</h3>
+                        <button class="btn btn-secondary" onclick="clearAlertHistory()">
+                            <i class="fas fa-trash"></i> Clear
+                        </button>
+                    </div>
+                    <div id="alertHistory" class="alert-history-list">
+                        <div class="empty-state">
+                            <i class="fas fa-history" style="font-size: 2rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                            <p>No recent notifications</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Social Section -->
+        <!-- Social Section (Enhanced) -->
         <section id="social" class="section">
-            <div class="grid grid-3">
-                <div class="stat-card">
+            <div class="social-header">
+                <h2>Social Trading & Achievements</h2>
+                <p>Connect with the community and track your progress</p>
+            </div>
+
+            <div class="grid grid-4 social-stats">
+                <div class="stat-card social">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
                     <div class="stat-value" id="followers">0</div>
                     <div class="stat-label">Followers</div>
+                    <div class="stat-change" id="followerChange">...</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card social">
+                    <div class="stat-icon"><i class="fas fa-user-plus"></i></div>
                     <div class="stat-value" id="following">0</div>
                     <div class="stat-label">Following</div>
+                    <div class="stat-change"><span>Traders</span></div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card social">
+                    <div class="stat-icon"><i class="fas fa-trophy"></i></div>
                     <div class="stat-value" id="socialRank">#-</div>
-                    <div class="stat-label">Your Rank</div>
+                    <div class="stat-label">Community Rank</div>
+                    <div class="stat-change" id="rankChange">...</div>
+                </div>
+                <div class="stat-card social">
+                    <div class="stat-icon"><i class="fas fa-medal"></i></div>
+                    <div class="stat-value" id="achievementCount">0</div>
+                    <div class="stat-label">Achievements</div>
+                    <div class="stat-change"><span id="achievementProgress">0/150</span></div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                <div class="card">
+            <div class="social-grid">
+                <div class="card leaderboard">
                     <div class="card-header">
-                        <h3 class="card-title">Top Performers (2 Weeks)</h3>
-                        <p style="font-size: 0.8rem; color: #888;">Based on portfolio returns</p>
+                        <h3 class="card-title">Top Performers</h3>
+                        <div class="leaderboard-filters">
+                            <button class="btn btn-sm active" onclick="filterLeaderboard('7d')">7D</button>
+                            <button class="btn btn-sm" onclick="filterLeaderboard('30d')">30D</button>
+                            <button class="btn btn-sm" onclick="filterLeaderboard('all')">All Time</button>
+                        </div>
                     </div>
-                    <div id="topPerformers">
+                    <div id="topPerformers" class="leaderboard-list">
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
                 </div>
 
-                <div class="card">
+                <div class="card trending-traders">
                     <div class="card-header">
                         <h3 class="card-title">Trending Traders</h3>
-                        <p style="font-size: 0.8rem; color: #888;">Rising stars & volume leaders</p>
+                        <p class="card-subtitle">Rising stars & volume leaders</p>
                     </div>
-                    <div id="trendingTraders">
+                    <div id="trendingTraders" class="trending-list">
                         <div class="loading"><div class="spinner"></div></div>
                     </div>
                 </div>
-            </div>
 
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Your Achievements</h3>
-                    <div style="font-size: 0.9rem; color: #888;">
-                        <span id="achievementProgress">0/50</span> unlocked
+                <div class="card achievements">
+                    <div class="card-header">
+                        <h3 class="card-title">Your Achievements</h3>
+                        <div class="achievement-filters">
+                            <button class="btn btn-sm active" onclick="filterAchievements('unlocked')">Unlocked</button>
+                            <button class="btn btn-sm" onclick="filterAchievements('locked')">Locked</button>
+                            <button class="btn btn-sm" onclick="filterAchievements('recent')">Recent</button>
+                        </div>
+                    </div>
+                    <div id="achievementsList" class="achievements-grid">
+                        <div class="loading"><div class="spinner"></div></div>
                     </div>
                 </div>
-                <div id="achievementsList">
-                    <div class="loading"><div class="spinner"></div></div>
+
+                <div class="card social-features">
+                    <div class="card-header">
+                        <h3 class="card-title">Social Features</h3>
+                    </div>
+                    <div class="social-actions">
+                        <button class="social-btn" onclick="sharePortfolio()">
+                            <i class="fas fa-share"></i>
+                            <span>Share Portfolio</span>
+                        </button>
+                        <button class="social-btn" onclick="findTraders()">
+                            <i class="fas fa-search"></i>
+                            <span>Find Traders</span>
+                        </button>
+                        <button class="social-btn" onclick="joinCommunity()">
+                            <i class="fas fa-discord"></i>
+                            <span>Join Discord</span>
+                        </button>
+                        <button class="social-btn" onclick="followTwitter()">
+                            <i class="fab fa-twitter"></i>
+                            <span>Follow Updates</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
     </main>
 
-    <!-- Alert Modal -->
+    <!-- Enhanced Modals -->
+
+    <!-- Alert Creation Modal -->
     <div id="alertModal" class="modal">
         <div class="modal-content">
             <div class="card-header">
-                <h3 class="card-title">Create Alert</h3>
-                <button onclick="closeAlertModal()" style="background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                <h3 class="card-title">Create Advanced Alert</h3>
+                <button onclick="closeAlertModal()" class="close-btn">&times;</button>
             </div>
             <form id="alertForm" onsubmit="createAlert(event)">
-                <div style="margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label>Token</label>
                     <input type="text" id="tokenInput" class="form-input" placeholder="Search token..." required>
+                    <div id="tokenSuggestions" class="suggestions-dropdown"></div>
                 </div>
-                <div style="margin-bottom: 1rem;">
+                <div class="form-group">
+                    <label>Alert Type</label>
+                    <select id="alertTypeSelect" class="form-select" onchange="updateAlertOptions()">
+                        <option value="price">Price Alert</option>
+                        <option value="volume">Volume Alert</option>
+                        <option value="whale">Whale Movement</option>
+                        <option value="sentiment">Sentiment Change</option>
+                    </select>
+                </div>
+                <div class="form-group" id="alertOptions">
+                    <label>Target Price</label>
                     <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
                 </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Create Alert</button>
+                <div class="form-group">
+                    <label>Notification Method</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="browserNotification" checked>
+                            Browser Notification
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="emailNotification">
+                            Email Alert
+                        </label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Create Alert</button>
                     <button type="button" class="btn btn-secondary" onclick="closeAlertModal()">Cancel</button>
                 </div>
             </form>
@@ -275,24 +852,140 @@
         <div class="modal-content">
             <div class="card-header">
                 <h3 class="card-title">Follow Wallet</h3>
-                <button onclick="closeFollowModal()" style="background: none; border: none; color: #888; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                <button onclick="closeFollowModal()" class="close-btn">&times;</button>
             </div>
             <form id="followForm" onsubmit="followWallet(event)">
-                <div style="margin-bottom: 1rem;">
-                    <input type="text" id="walletInput" class="form-input" placeholder="Wallet address (44 characters)" required minlength="44" maxlength="44">
+                <div class="form-group">
+                    <label>Wallet Address</label>
+                    <input type="text" id="walletInput" class="form-input" 
+                           placeholder="Enter Solana wallet address (44 characters)" 
+                           required minlength="44" maxlength="44">
+                    <div class="input-help">Example: 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM</div>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <input type="text" id="nicknameInput" class="form-input" placeholder="Nickname (optional)" maxlength="20">
+                <div class="form-group">
+                    <label>Nickname (Optional)</label>
+                    <input type="text" id="nicknameInput" class="form-input" 
+                           placeholder="Give this wallet a memorable name" maxlength="20">
                 </div>
-                <div style="display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Follow Wallet</button>
+                <div class="form-group">
+                    <label>Notification Settings</label>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="tradeNotifications" checked>
+                            Notify on trades
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="profitNotifications">
+                            Notify on significant gains/losses
+                        </label>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Follow Wallet</button>
                     <button type="button" class="btn btn-secondary" onclick="closeFollowModal()">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-content">
+            <div class="card-header">
+                <h3 class="card-title">Help & Tutorial</h3>
+                <button onclick="closeHelpModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="help-tabs">
+                <button class="help-tab active" onclick="showHelpTab('getting-started')">Getting Started</button>
+                <button class="help-tab" onclick="showHelpTab('features')">Features</button>
+                <button class="help-tab" onclick="showHelpTab('faq')">FAQ</button>
+                <button class="help-tab" onclick="showHelpTab('support')">Support</button>
+            </div>
+            <div class="help-content-area">
+                <div id="getting-started" class="help-tab-content active">
+                    <h4>Welcome to Cypher!</h4>
+                    <p>Your advanced Solana portfolio analytics platform. Here's how to get started:</p>
+                    <ol>
+                        <li><strong>Connect Your Wallet:</strong> Click the "Connect Wallet" button and select your preferred Solana wallet.</li>
+                        <li><strong>Explore Your Portfolio:</strong> View your holdings, performance charts, and risk analysis.</li>
+                        <li><strong>Set Up Alerts:</strong> Create price alerts to stay informed about market movements.</li>
+                        <li><strong>Follow Traders:</strong> Discover and follow successful traders to learn from their strategies.</li>
+                        <li><strong>Track Achievements:</strong> Unlock achievements as you trade and use the platform.</li>
+                    </ol>
+                </div>
+                <div id="features" class="help-tab-content">
+                    <h4>Platform Features</h4>
+                    <div class="feature-grid">
+                        <div class="feature-item">
+                            <i class="fas fa-chart-pie"></i>
+                            <h5>Portfolio Analytics</h5>
+                            <p>Comprehensive portfolio tracking with performance metrics and risk analysis.</p>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-whale"></i>
+                            <h5>Whale Tracking</h5>
+                            <p>Monitor large transactions and follow successful traders in real-time.</p>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-bell"></i>
+                            <h5>Smart Alerts</h5>
+                            <p>Advanced notification system for price changes, volume spikes, and more.</p>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-trophy"></i>
+                            <h5>Achievement System</h5>
+                            <p>150+ achievements to unlock as you trade and explore the Solana ecosystem.</p>
+                        </div>
+                    </div>
+                </div>
+                <div id="faq" class="help-tab-content">
+                    <h4>Frequently Asked Questions</h4>
+                    <div class="faq-item">
+                        <h5>Is my wallet safe with Cypher?</h5>
+                        <p>Yes! Cypher only reads your public wallet data. We never store or access your private keys.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h5>How often is data updated?</h5>
+                        <p>Portfolio and market data is updated in real-time. Price feeds are refreshed every few seconds.</p>
+                    </div>
+                    <div class="faq-item">
+                        <h5>Can I use multiple wallets?</h5>
+                        <p>Currently, you can connect one wallet at a time. Multi-wallet support is coming soon!</p>
+                    </div>
+                </div>
+                <div id="support" class="help-tab-content">
+                    <h4>Get Support</h4>
+                    <p>Need help? We're here for you!</p>
+                    <div class="support-options">
+                        <button class="support-btn" onclick="openDiscord()">
+                            <i class="fab fa-discord"></i>
+                            Join Discord Community
+                        </button>
+                        <button class="support-btn" onclick="openTwitter()">
+                            <i class="fab fa-twitter"></i>
+                            Follow on Twitter
+                        </button>
+                        <button class="support-btn" onclick="sendEmail()">
+                            <i class="fas fa-envelope"></i>
+                            Email Support
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
     <div id="toast" class="toast"></div>
+
+    <!-- Progress Indicator for Loading -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Loading Cypher</h3>
+            <p id="loadingStatus">Initializing application...</p>
+        </div>
+    </div>
 
     <script src="script.js"></script>
 </body>
