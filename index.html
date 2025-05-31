@@ -10,126 +10,11 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Welcome/Onboarding Modal -->
-    <div id="welcomeModal" class="modal welcome-modal">
-        <div class="modal-content welcome-content">
-            <div class="welcome-header">
-                <div class="logo-large"><i class="fas fa-chart-line"></i> Cypher</div>
-                <p>Advanced Solana Portfolio Analytics</p>
-            </div>
-            
-            <div class="onboarding-step active" data-step="1">
-                <div class="step-indicator">
-                    <div class="step-number">1</div>
-                    <h3>Welcome to Cypher</h3>
-                </div>
-                <div class="step-content">
-                    <div class="feature-preview">
-                        <i class="fas fa-rocket step-icon"></i>
-                        <h4>Professional Portfolio Tracking</h4>
-                        <p>Track your Solana investments with real-time analytics, performance metrics, and risk assessment tools.</p>
-                    </div>
-                    <ul class="feature-list">
-                        <li><i class="fas fa-check"></i> Real-time portfolio valuation</li>
-                        <li><i class="fas fa-check"></i> Advanced performance charts</li>
-                        <li><i class="fas fa-check"></i> Risk analysis & diversification scores</li>
-                        <li><i class="fas fa-check"></i> Whale tracking & social trading</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="onboarding-step" data-step="2">
-                <div class="step-indicator">
-                    <div class="step-number">2</div>
-                    <h3>Connect Your Wallet</h3>
-                </div>
-                <div class="step-content">
-                    <div class="wallet-setup">
-                        <div class="wallet-option" onclick="connectWalletFromOnboarding('phantom')">
-                            <img src="https://phantom.app/img/phantom-logo.png" alt="Phantom" onerror="this.style.display='none'">
-                            <div>
-                                <h4>Phantom Wallet</h4>
-                                <p>Most popular Solana wallet</p>
-                            </div>
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                        <div class="wallet-option" onclick="connectWalletFromOnboarding('solflare')">
-                            <div class="wallet-icon">S</div>
-                            <div>
-                                <h4>Solflare</h4>
-                                <p>Advanced features & security</p>
-                            </div>
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                        <div class="wallet-option" onclick="connectWalletFromOnboarding('backpack')">
-                            <div class="wallet-icon">B</div>
-                            <div>
-                                <h4>Backpack</h4>
-                                <p>Multi-chain support</p>
-                            </div>
-                            <i class="fas fa-arrow-right"></i>
-                        </div>
-                    </div>
-                    <div class="security-note">
-                        <i class="fas fa-shield-alt"></i>
-                        <p>Cypher never stores your private keys. We only read your public wallet data.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="onboarding-step" data-step="3">
-                <div class="step-indicator">
-                    <div class="step-number">3</div>
-                    <h3>Explore Features</h3>
-                </div>
-                <div class="step-content">
-                    <div class="feature-tour">
-                        <div class="tour-item">
-                            <i class="fas fa-chart-pie"></i>
-                            <h4>Portfolio Dashboard</h4>
-                            <p>View your complete portfolio performance, asset allocation, and historical trends.</p>
-                        </div>
-                        <div class="tour-item">
-                            <i class="fas fa-whale"></i>
-                            <h4>Whale Tracking</h4>
-                            <p>Monitor large transactions and follow successful traders in real-time.</p>
-                        </div>
-                        <div class="tour-item">
-                            <i class="fas fa-bell"></i>
-                            <h4>Smart Alerts</h4>
-                            <p>Set price alerts, volume spikes, and social sentiment notifications.</p>
-                        </div>
-                        <div class="tour-item">
-                            <i class="fas fa-trophy"></i>
-                            <h4>Achievements</h4>
-                            <p>Unlock 150+ achievements and track your trading milestones.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="onboarding-controls">
-                <button class="btn btn-secondary" onclick="previousOnboardingStep()" id="prevBtn" style="display: none;">
-                    <i class="fas fa-arrow-left"></i> Previous
-                </button>
-                <div class="step-dots">
-                    <div class="dot active" data-step="1"></div>
-                    <div class="dot" data-step="2"></div>
-                    <div class="dot" data-step="3"></div>
-                </div>
-                <button class="btn btn-primary" onclick="nextOnboardingStep()" id="nextBtn">
-                    Next <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Main App Header -->
     <div class="header">
         <div class="header-content">
             <div class="logo">
                 <i class="fas fa-chart-line"></i> Cypher
-                <span class="version-badge">v2.0</span>
             </div>
             <div class="header-actions">
                 <div class="search-container">
@@ -320,7 +205,7 @@
             </div>
         </section>
 
-        <!-- Analytics Section (New) -->
+        <!-- Analytics Section -->
         <section id="analytics" class="section">
             <div class="analytics-header">
                 <h2>Advanced Analytics</h2>
@@ -407,7 +292,7 @@
             </div>
         </section>
 
-        <!-- Market Section (Enhanced) -->
+        <!-- Market Section -->
         <section id="market" class="section">
             <div class="market-header">
                 <h2>Market Overview</h2>
@@ -489,7 +374,7 @@
             </div>
         </section>
 
-        <!-- Whale Section (Enhanced) -->
+        <!-- Whale Section -->
         <section id="whale" class="section">
             <div class="whale-header">
                 <h2>Whale Tracking & Social Trading</h2>
@@ -551,14 +436,14 @@
                         </button>
                     </div>
                     <div id="followedWallets" class="wallets-list">
-                    <div class="empty-state">
-                        <i class="fas fa-users"></i>
-                        <h4>No Wallets Followed</h4>
-                        <p>Start following successful traders to copy their strategies and get notifications about their activities.</p>
-                        <button class="btn btn-primary" onclick="openFollowModal()">
-                            <i class="fas fa-plus"></i> Follow Your First Trader
-                        </button>
-                    </div>
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <h4>No Wallets Followed</h4>
+                            <p>Start following successful traders to copy their strategies and get notifications about their activities.</p>
+                            <button class="btn btn-primary" onclick="openFollowModal()">
+                                <i class="fas fa-plus"></i> Follow Your First Trader
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -597,7 +482,7 @@
             </div>
         </section>
 
-        <!-- Alerts Section (Enhanced) -->
+        <!-- Alerts Section -->
         <section id="alerts" class="section">
             <div class="alerts-header">
                 <h2>Smart Alerts & Notifications</h2>
@@ -676,14 +561,14 @@
                         </div>
                     </div>
                     <div id="alertsList" class="alerts-list">
-                    <div class="empty-state">
-                        <i class="fas fa-bell"></i>
-                        <h4>No Active Alerts</h4>
-                        <p>Create your first alert to get notified of important market movements and price changes.</p>
-                        <button class="btn btn-primary" onclick="openAlertModal()">
-                            <i class="fas fa-plus"></i> Create Your First Alert
-                        </button>
-                    </div>
+                        <div class="empty-state">
+                            <i class="fas fa-bell"></i>
+                            <h4>No Active Alerts</h4>
+                            <p>Create your first alert to get notified of important market movements and price changes.</p>
+                            <button class="btn btn-primary" onclick="openAlertModal()">
+                                <i class="fas fa-plus"></i> Create Your First Alert
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -695,17 +580,17 @@
                         </button>
                     </div>
                     <div id="alertHistory" class="alert-history-list">
-                    <div class="empty-state">
-                        <i class="fas fa-history"></i>
-                        <h4>No Recent Notifications</h4>
-                        <p>Your notification history will appear here once you start receiving alerts.</p>
-                    </div>
+                        <div class="empty-state">
+                            <i class="fas fa-history"></i>
+                            <h4>No Recent Notifications</h4>
+                            <p>Your notification history will appear here once you start receiving alerts.</p>
+                        </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Social Section (Enhanced) -->
+        <!-- Social Section -->
         <section id="social" class="section">
             <div class="social-header">
                 <h2>Social Trading & Achievements</h2>
@@ -731,269 +616,3 @@
                     <div class="stat-label">Community Rank</div>
                     <div class="stat-change" id="rankChange">...</div>
                 </div>
-                <div class="stat-card social">
-                    <div class="stat-icon"><i class="fas fa-medal"></i></div>
-                    <div class="stat-value" id="achievementCount">0</div>
-                    <div class="stat-label">Achievements</div>
-                    <div class="stat-change"><span id="achievementProgress">0/150</span></div>
-                </div>
-            </div>
-
-            <div class="social-grid">
-                <div class="card leaderboard">
-                    <div class="card-header">
-                        <h3 class="card-title">Top Performers</h3>
-                        <div class="leaderboard-filters">
-                            <button class="btn btn-sm active" onclick="filterLeaderboard('7d')">7D</button>
-                            <button class="btn btn-sm" onclick="filterLeaderboard('30d')">30D</button>
-                            <button class="btn btn-sm" onclick="filterLeaderboard('all')">All Time</button>
-                        </div>
-                    </div>
-                    <div id="topPerformers" class="leaderboard-list">
-                        <div class="loading"><div class="spinner"></div></div>
-                    </div>
-                </div>
-
-                <div class="card trending-traders">
-                    <div class="card-header">
-                        <h3 class="card-title">Trending Traders</h3>
-                        <p class="card-subtitle">Rising stars & volume leaders</p>
-                    </div>
-                    <div id="trendingTraders" class="trending-list">
-                        <div class="loading"><div class="spinner"></div></div>
-                    </div>
-                </div>
-
-                <div class="card achievements">
-                    <div class="card-header">
-                        <h3 class="card-title">Your Achievements</h3>
-                        <div class="achievement-filters">
-                            <button class="btn btn-sm active" onclick="filterAchievements('unlocked')">Unlocked</button>
-                            <button class="btn btn-sm" onclick="filterAchievements('locked')">Locked</button>
-                            <button class="btn btn-sm" onclick="filterAchievements('recent')">Recent</button>
-                        </div>
-                    </div>
-                    <div id="achievementsList" class="achievements-grid">
-                        <div class="loading"><div class="spinner"></div></div>
-                    </div>
-                </div>
-
-                <div class="card social-features">
-                    <div class="card-header">
-                        <h3 class="card-title">Social Features</h3>
-                    </div>
-                    <div class="social-actions">
-                        <button class="social-btn" onclick="sharePortfolio()">
-                            <i class="fas fa-share"></i>
-                            <span>Share Portfolio</span>
-                        </button>
-                        <button class="social-btn" onclick="findTraders()">
-                            <i class="fas fa-search"></i>
-                            <span>Find Traders</span>
-                        </button>
-                        <button class="social-btn" onclick="joinCommunity()">
-                            <i class="fas fa-discord"></i>
-                            <span>Join Discord</span>
-                        </button>
-                        <button class="social-btn" onclick="followTwitter()">
-                            <i class="fab fa-twitter"></i>
-                            <span>Follow Updates</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Enhanced Modals -->
-
-    <!-- Alert Creation Modal -->
-    <div id="alertModal" class="modal">
-        <div class="modal-content">
-            <div class="card-header">
-                <h3 class="card-title">Create Advanced Alert</h3>
-                <button onclick="closeAlertModal()" class="close-btn">&times;</button>
-            </div>
-            <form id="alertForm" onsubmit="createAlert(event)">
-                <div class="form-group">
-                    <label>Token</label>
-                    <input type="text" id="tokenInput" class="form-input" placeholder="Search token..." required>
-                    <div id="tokenSuggestions" class="suggestions-dropdown"></div>
-                </div>
-                <div class="form-group">
-                    <label>Alert Type</label>
-                    <select id="alertTypeSelect" class="form-select" onchange="updateAlertOptions()">
-                        <option value="price">Price Alert</option>
-                        <option value="volume">Volume Alert</option>
-                        <option value="whale">Whale Movement</option>
-                        <option value="sentiment">Sentiment Change</option>
-                    </select>
-                </div>
-                <div class="form-group" id="alertOptions">
-                    <label>Target Price</label>
-                    <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
-                </div>
-                <div class="form-group">
-                    <label>Notification Method</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="browserNotification" checked>
-                            Browser Notification
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="emailNotification">
-                            Email Alert
-                        </label>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Create Alert</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeAlertModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Follow Wallet Modal -->
-    <div id="followModal" class="modal">
-        <div class="modal-content">
-            <div class="card-header">
-                <h3 class="card-title">Follow Wallet</h3>
-                <button onclick="closeFollowModal()" class="close-btn">&times;</button>
-            </div>
-            <form id="followForm" onsubmit="followWallet(event)">
-                <div class="form-group">
-                    <label>Wallet Address</label>
-                    <input type="text" id="walletInput" class="form-input" 
-                           placeholder="Enter Solana wallet address (44 characters)" 
-                           required minlength="44" maxlength="44">
-                    <div class="input-help">Example: 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM</div>
-                </div>
-                <div class="form-group">
-                    <label>Nickname (Optional)</label>
-                    <input type="text" id="nicknameInput" class="form-input" 
-                           placeholder="Give this wallet a memorable name" maxlength="20">
-                </div>
-                <div class="form-group">
-                    <label>Notification Settings</label>
-                    <div class="checkbox-group">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="tradeNotifications" checked>
-                            Notify on trades
-                        </label>
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="profitNotifications">
-                            Notify on significant gains/losses
-                        </label>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Follow Wallet</button>
-                    <button type="button" class="btn btn-secondary" onclick="closeFollowModal()">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Help Modal -->
-    <div id="helpModal" class="modal">
-        <div class="modal-content help-content">
-            <div class="card-header">
-                <h3 class="card-title">Help & Tutorial</h3>
-                <button onclick="closeHelpModal()" class="close-btn">&times;</button>
-            </div>
-            <div class="help-tabs">
-                <button class="help-tab active" onclick="showHelpTab('getting-started')">Getting Started</button>
-                <button class="help-tab" onclick="showHelpTab('features')">Features</button>
-                <button class="help-tab" onclick="showHelpTab('faq')">FAQ</button>
-                <button class="help-tab" onclick="showHelpTab('support')">Support</button>
-            </div>
-            <div class="help-content-area">
-                <div id="getting-started" class="help-tab-content active">
-                    <h4>Welcome to Cypher!</h4>
-                    <p>Your advanced Solana portfolio analytics platform. Here's how to get started:</p>
-                    <ol>
-                        <li><strong>Connect Your Wallet:</strong> Click the "Connect Wallet" button and select your preferred Solana wallet.</li>
-                        <li><strong>Explore Your Portfolio:</strong> View your holdings, performance charts, and risk analysis.</li>
-                        <li><strong>Set Up Alerts:</strong> Create price alerts to stay informed about market movements.</li>
-                        <li><strong>Follow Traders:</strong> Discover and follow successful traders to learn from their strategies.</li>
-                        <li><strong>Track Achievements:</strong> Unlock achievements as you trade and use the platform.</li>
-                    </ol>
-                </div>
-                <div id="features" class="help-tab-content">
-                    <h4>Platform Features</h4>
-                    <div class="feature-grid">
-                        <div class="feature-item">
-                            <i class="fas fa-chart-pie"></i>
-                            <h5>Portfolio Analytics</h5>
-                            <p>Comprehensive portfolio tracking with performance metrics and risk analysis.</p>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-whale"></i>
-                            <h5>Whale Tracking</h5>
-                            <p>Monitor large transactions and follow successful traders in real-time.</p>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-bell"></i>
-                            <h5>Smart Alerts</h5>
-                            <p>Advanced notification system for price changes, volume spikes, and more.</p>
-                        </div>
-                        <div class="feature-item">
-                            <i class="fas fa-trophy"></i>
-                            <h5>Achievement System</h5>
-                            <p>150+ achievements to unlock as you trade and explore the Solana ecosystem.</p>
-                        </div>
-                    </div>
-                </div>
-                <div id="faq" class="help-tab-content">
-                    <h4>Frequently Asked Questions</h4>
-                    <div class="faq-item">
-                        <h5>Is my wallet safe with Cypher?</h5>
-                        <p>Yes! Cypher only reads your public wallet data. We never store or access your private keys.</p>
-                    </div>
-                    <div class="faq-item">
-                        <h5>How often is data updated?</h5>
-                        <p>Portfolio and market data is updated in real-time. Price feeds are refreshed every few seconds.</p>
-                    </div>
-                    <div class="faq-item">
-                        <h5>Can I use multiple wallets?</h5>
-                        <p>Currently, you can connect one wallet at a time. Multi-wallet support is coming soon!</p>
-                    </div>
-                </div>
-                <div id="support" class="help-tab-content">
-                    <h4>Get Support</h4>
-                    <p>Need help? We're here for you!</p>
-                    <div class="support-options">
-                        <button class="support-btn" onclick="openDiscord()">
-                            <i class="fab fa-discord"></i>
-                            Join Discord Community
-                        </button>
-                        <button class="support-btn" onclick="openTwitter()">
-                            <i class="fab fa-twitter"></i>
-                            Follow on Twitter
-                        </button>
-                        <button class="support-btn" onclick="sendEmail()">
-                            <i class="fas fa-envelope"></i>
-                            Email Support
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notifications -->
-    <div id="toast" class="toast"></div>
-
-    <!-- Progress Indicator for Loading -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <h3>Loading Cypher</h3>
-            <p id="loadingStatus">Initializing application...</p>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
-</html>
