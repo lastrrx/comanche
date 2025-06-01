@@ -21,6 +21,11 @@
     <!-- Main App Header -->
     <div class="header">
         <div class="header-content">
+            <!-- Mobile Navigation Toggle -->
+            <button class="mobile-nav-toggle" id="mobileNavToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            
             <div class="logo">
                 <i class="fas fa-chart-line"></i> Cypher
             </div>
@@ -42,6 +47,39 @@
                         <i class="fas fa-question-circle"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile Navigation Overlay -->
+    <div class="mobile-nav-overlay" id="mobileNavOverlay">
+        <button class="mobile-nav-close" id="mobileNavClose">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="mobile-nav-menu">
+            <div class="mobile-nav-item active" data-section="portfolio">
+                <i class="fas fa-chart-pie"></i>
+                <span>Portfolio</span>
+            </div>
+            <div class="mobile-nav-item" data-section="analytics">
+                <i class="fas fa-brain"></i>
+                <span>Analytics</span>
+            </div>
+            <div class="mobile-nav-item" data-section="market">
+                <i class="fas fa-globe"></i>
+                <span>Market</span>
+            </div>
+            <div class="mobile-nav-item" data-section="whale">
+                <i class="fas fa-fish"></i>
+                <span>Whale</span>
+            </div>
+            <div class="mobile-nav-item" data-section="alerts">
+                <i class="fas fa-bell"></i>
+                <span>Alerts</span>
+            </div>
+            <div class="mobile-nav-item" data-section="social">
+                <i class="fas fa-users"></i>
+                <span>Social</span>
             </div>
         </div>
     </div>
@@ -142,11 +180,17 @@
                     <div class="card-header">
                         <h3 class="card-title">Token Holdings</h3>
                         <div class="holdings-controls">
-                            <select class="form-select" id="sortHoldings" onchange="sortHoldings()">
-                                <option value="value">Sort by Value</option>
-                                <option value="change">Sort by Change</option>
-                                <option value="alphabetical">Sort A-Z</option>
-                            </select>
+                            <div class="dropdown">
+                                <div class="dropdown-toggle" id="sortDropdown">
+                                    <span>Sort by Value</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="dropdown-menu" id="sortDropdownMenu">
+                                    <div class="dropdown-item selected" data-value="value">Sort by Value</div>
+                                    <div class="dropdown-item" data-value="change">Sort by Change</div>
+                                    <div class="dropdown-item" data-value="alphabetical">Sort A-Z</div>
+                                </div>
+                            </div>
                             <button class="btn btn-secondary" onclick="exportHoldings()">
                                 <i class="fas fa-download"></i> Export
                             </button>
@@ -245,12 +289,18 @@
                 <div class="card">
                     <div class="card-header">
                         <h3 class="card-title">Performance vs Benchmarks</h3>
-                        <select class="form-select" onchange="changeBenchmark(this.value)">
-                            <option value="sol">vs SOL</option>
-                            <option value="btc">vs BTC</option>
-                            <option value="eth">vs ETH</option>
-                            <option value="market">vs Market</option>
-                        </select>
+                        <div class="dropdown">
+                            <div class="dropdown-toggle" id="benchmarkDropdown">
+                                <span>vs SOL</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </div>
+                            <div class="dropdown-menu" id="benchmarkDropdownMenu">
+                                <div class="dropdown-item selected" data-value="sol">vs SOL</div>
+                                <div class="dropdown-item" data-value="btc">vs BTC</div>
+                                <div class="dropdown-item" data-value="eth">vs ETH</div>
+                                <div class="dropdown-item" data-value="market">vs Market</div>
+                            </div>
+                        </div>
                     </div>
                     <div class="chart-container">
                         <canvas id="benchmarkChart"></canvas>
@@ -306,13 +356,19 @@
                 <h2>Market Overview</h2>
                 <div class="market-controls">
                     <input type="text" class="search-input" placeholder="Search tokens..." id="marketSearch">
-                    <select class="form-select" id="marketFilter">
-                        <option value="all">All Tokens</option>
-                        <option value="trending">Trending</option>
-                        <option value="gainers">Top Gainers</option>
-                        <option value="losers">Top Losers</option>
-                        <option value="volume">High Volume</option>
-                    </select>
+                    <div class="dropdown">
+                        <div class="dropdown-toggle" id="marketFilterDropdown">
+                            <span>All Tokens</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        <div class="dropdown-menu" id="marketFilterDropdownMenu">
+                            <div class="dropdown-item selected" data-value="all">All Tokens</div>
+                            <div class="dropdown-item" data-value="trending">Trending</div>
+                            <div class="dropdown-item" data-value="gainers">Top Gainers</div>
+                            <div class="dropdown-item" data-value="losers">Top Losers</div>
+                            <div class="dropdown-item" data-value="volume">High Volume</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -421,11 +477,17 @@
                     <div class="card-header">
                         <h3 class="card-title">Live Whale Movements</h3>
                         <div class="whale-filters">
-                            <select class="form-select" onchange="filterWhaleMovements(this.value)">
-                                <option value="all">All Tokens</option>
-                                <option value="holdings">My Holdings Only</option>
-                                <option value="trending">Trending Tokens</option>
-                            </select>
+                            <div class="dropdown">
+                                <div class="dropdown-toggle" id="whaleFilterDropdown">
+                                    <span>All Tokens</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </div>
+                                <div class="dropdown-menu" id="whaleFilterDropdownMenu">
+                                    <div class="dropdown-item selected" data-value="all">All Tokens</div>
+                                    <div class="dropdown-item" data-value="holdings">My Holdings Only</div>
+                                    <div class="dropdown-item" data-value="trending">Trending Tokens</div>
+                                </div>
+                            </div>
                             <button class="btn btn-secondary" onclick="refreshWhaleData()">
                                 <i class="fas fa-sync-alt"></i>
                             </button>
@@ -529,25 +591,37 @@
                         </div>
                     </div>
                     <div class="alert-form-container">
-                        <form id="quickAlertForm" class="quick-alert-form">
+                        <form id="quickAlertForm" class="quick-alert-form" onsubmit="createQuickAlert(event)">
                             <div class="form-row">
                                 <input type="text" id="alertToken" class="form-input" placeholder="Token symbol (e.g., SOL)" required>
-                                <select id="alertType" class="form-select" onchange="updateAlertForm()">
-                                    <option value="price_above">Price Above</option>
-                                    <option value="price_below">Price Below</option>
-                                    <option value="change_percent">% Change</option>
-                                    <option value="volume_spike">Volume Spike</option>
-                                    <option value="whale_movement">Whale Movement</option>
-                                </select>
+                                <div class="dropdown">
+                                    <div class="dropdown-toggle" id="alertTypeDropdown">
+                                        <span>Price Above</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="dropdown-menu" id="alertTypeDropdownMenu">
+                                        <div class="dropdown-item selected" data-value="price_above">Price Above</div>
+                                        <div class="dropdown-item" data-value="price_below">Price Below</div>
+                                        <div class="dropdown-item" data-value="change_percent">% Change</div>
+                                        <div class="dropdown-item" data-value="volume_spike">Volume Spike</div>
+                                        <div class="dropdown-item" data-value="whale_movement">Whale Movement</div>
+                                    </div>
+                                </div>
                             </div>
                             <div class="form-row">
                                 <input type="number" id="alertValue" class="form-input" placeholder="Target value" step="0.000001" required>
-                                <select id="alertTimeframe" class="form-select">
-                                    <option value="instant">Instant</option>
-                                    <option value="5m">5 Minutes</option>
-                                    <option value="1h">1 Hour</option>
-                                    <option value="24h">24 Hours</option>
-                                </select>
+                                <div class="dropdown">
+                                    <div class="dropdown-toggle" id="alertTimeframeDropdown">
+                                        <span>Instant</span>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </div>
+                                    <div class="dropdown-menu" id="alertTimeframeDropdownMenu">
+                                        <div class="dropdown-item selected" data-value="instant">Instant</div>
+                                        <div class="dropdown-item" data-value="5m">5 Minutes</div>
+                                        <div class="dropdown-item" data-value="1h">1 Hour</div>
+                                        <div class="dropdown-item" data-value="24h">24 Hours</div>
+                                    </div>
+                                </div>
                             </div>
                             <button type="submit" class="btn btn-primary full-width">
                                 <i class="fas fa-plus"></i> Create Alert
@@ -824,197 +898,6 @@
             </div>
         </div>
     </div>
-
-    <!-- JavaScript Functions for Modal Operations -->
-    <script>
-        // Global modal functions
-        function openAlertModal() {
-            document.getElementById('alertModal').style.display = 'flex';
-        }
-
-        function closeAlertModal() {
-            document.getElementById('alertModal').style.display = 'none';
-        }
-
-        function openFollowModal() {
-            document.getElementById('followModal').style.display = 'flex';
-        }
-
-        function closeFollowModal() {
-            document.getElementById('followModal').style.display = 'none';
-        }
-
-        function showHelp() {
-            document.getElementById('helpModal').style.display = 'flex';
-        }
-
-        function closeHelpModal() {
-            document.getElementById('helpModal').style.display = 'none';
-        }
-
-        function createAlert(event) {
-            event.preventDefault();
-            const token = document.getElementById('tokenInput').value;
-            const alertType = document.getElementById('alertTypeSelect').value;
-            const price = document.getElementById('priceInput').value;
-            
-            // Show success message
-            if (window.app) {
-                window.app.showToast(`Alert created for ${token} (${alertType}): ${price}`, 'success');
-            } else {
-                alert(`Alert created for ${token} (${alertType}): ${price}`);
-            }
-            
-            closeAlertModal();
-        }
-
-        function followWallet(event) {
-            event.preventDefault();
-            const walletAddress = document.getElementById('walletInput').value;
-            const nickname = document.getElementById('nicknameInput').value || 'Unknown Wallet';
-            
-            // Show success message
-            if (window.app) {
-                window.app.showToast(`Now following wallet: ${nickname}`, 'success');
-            } else {
-                alert(`Now following wallet: ${nickname}`);
-            }
-            
-            closeFollowModal();
-        }
-
-        function updateAlertOptions() {
-            const alertType = document.getElementById('alertTypeSelect').value;
-            const alertOptions = document.getElementById('alertOptions');
-            
-            if (alertType === 'price') {
-                alertOptions.innerHTML = `
-                    <label>Target Price</label>
-                    <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
-                `;
-            } else if (alertType === 'volume') {
-                alertOptions.innerHTML = `
-                    <label>Volume Threshold</label>
-                    <input type="number" id="volumeInput" class="form-input" placeholder="Volume threshold" required>
-                `;
-            } else if (alertType === 'whale') {
-                alertOptions.innerHTML = `
-                    <label>Transaction Size (SOL)</label>
-                    <input type="number" id="whaleInput" class="form-input" placeholder="Minimum transaction size" required>
-                `;
-            }
-        }
-
-        function showHelpTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.help-tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.help-tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // Additional helper functions for missing onclick handlers
-        function filterLeaderboard(period) {
-            if (window.app) {
-                window.app.showToast(`Leaderboard filtered by ${period}`, 'info');
-            }
-        }
-
-        function filterAchievements(filter) {
-            if (window.app) {
-                window.app.showToast(`Achievements filtered by ${filter}`, 'info');
-            }
-        }
-
-        function useAlertTemplate(type) {
-            document.getElementById('alertTypeSelect').value = type;
-            updateAlertOptions();
-            if (window.app) {
-                window.app.showToast(`Using ${type} alert template`, 'info');
-            }
-        }
-
-        function updateAlertForm() {
-            updateAlertOptions();
-        }
-
-        function setWhaleThreshold(amount) {
-            // Update active button
-            document.querySelectorAll('.threshold-buttons .btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            if (window.app) {
-                window.app.showToast(`Whale threshold set to ${amount} SOL`, 'info');
-            }
-        }
-
-        function setCustomThreshold() {
-            const customValue = document.getElementById('customThreshold').value;
-            if (customValue) {
-                if (window.app) {
-                    window.app.showToast(`Custom whale threshold set to ${customValue} SOL`, 'info');
-                }
-            }
-        }
-
-        // Close modals when clicking outside
-        document.addEventListener('click', function(event) {
-            const modals = ['welcomeModal', 'alertModal', 'followModal', 'helpModal'];
-            modals.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal && event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Cypher UI loaded successfully');
-            
-            // Add click listeners to navigation tabs to override onclick
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const onclickAttr = this.getAttribute('onclick');
-                    if (onclickAttr && onclickAttr.includes('switchSection')) {
-                        const sectionMatch = onclickAttr.match(/switchSection\('(\w+)'\)/);
-                        if (sectionMatch && window.app) {
-                            window.app.switchSection(sectionMatch[1]);
-                        }
-                    }
-                });
-            });
-
-            // Add click listener to wallet button
-            const walletBtn = document.getElementById('connectWallet');
-            if (walletBtn) {
-                walletBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (window.app) {
-                        window.app.connectWallet();
-                    }
-                });
-            }
-
-            // Add click listener to help button
-            const helpBtn = document.getElementById('helpBtn');
-            if (helpBtn) {
-                helpBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showHelp();
-                });
-            }
-        });
-    </script>
 
     <!-- Load the external JavaScript file -->
     <script src="script.js"></script>
