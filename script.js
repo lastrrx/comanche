@@ -72,18 +72,48 @@ class CypherApp {
             }
         };
         
-        // Working RPC endpoints for 2025
+        // API Configuration with authenticated endpoints
+        this.apiConfig = {
+            extrnode: {
+                key: 'e0c37480-5843-44e5-bf0e-d0bb97addc76',
+                endpoint: 'https://solana-mainnet.rpc.extrnode.com/e0c37480-5843-44e5-bf0e-d0bb97addc76',
+                network: 'mainnet'
+            },
+            alchemy: {
+                key: 'Gd9lQyyMomZHlWBm5ggDGeJ6laFVcGkb',
+                endpoint: 'https://solana-devnet.g.alchemy.com/v2/Gd9lQyyMomZHlWBm5ggDGeJ6laFVcGkb',
+                network: 'devnet'
+            },
+            coingecko: {
+                key: 'CG-MyyvkFkqdTef8PzJRwfuiY1t',
+                baseUrl: 'https://api.coingecko.com/api/v3',
+                rateLimit: 10000 // Pro plan: 10,000 requests/month
+            }
+        };
+
+        // Prioritized RPC endpoints (mainnet first, then devnet for fallback)
         this.rpcEndpoints = [
-            'https://solana-mainnet.rpc.extrnode.com',
-            'https://rpc.hellomoon.io',
-            'https://solana.blockpi.network/v1/rpc/public',
-            'https://solana-mainnet.phantom.tech',
-            'https://ssc-dao.genesysgo.net'
+            {
+                url: this.apiConfig.extrnode.endpoint,
+                network: 'mainnet',
+                name: 'Extrnode'
+            },
+            {
+                url: this.apiConfig.alchemy.endpoint,
+                network: 'devnet', 
+                name: 'Alchemy'
+            },
+            {
+                url: 'https://api.mainnet-beta.solana.com',
+                network: 'mainnet',
+                name: 'Solana Labs'
+            }
         ];
         
         this.solana = {
             connection: null,
             currentEndpoint: 0,
+            currentNetwork: 'mainnet',
             useApiOnly: false
         };
 
@@ -152,7 +182,10 @@ class CypherApp {
             this.hideLoadingOverlay();
             this.startRealTimeUpdates();
             
+            // Show initialization success with API info
+            const apiStatus = `✅ Initialized with ${this.getNetworkDisplayName()} + CoinGecko Pro API`;
             console.log('🚀 Cypher initialized successfully');
+            this.showToast(apiStatus, 'success', 3000);
             
         } catch (error) {
             console.error('❌ Failed to initialize Cypher:', error);
@@ -170,30 +203,41 @@ class CypherApp {
             return;
         }
 
+        // Try authenticated endpoints first for best reliability
         for (let i = 0; i < this.rpcEndpoints.length; i++) {
+            const endpoint = this.rpcEndpoints[i];
             try {
-                console.log(`🔄 Testing RPC: ${this.rpcEndpoints[i]}`);
+                console.log(`🔄 Testing RPC: ${endpoint.name} (${endpoint.network})`);
                 
                 const connection = new solanaWeb3.Connection(
-                    this.rpcEndpoints[i], 
+                    endpoint.url, 
                     'confirmed'
                 );
                 
+                // Test connection with timeout
                 const testPromise = connection.getLatestBlockhash();
                 const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), 3000)
+                    setTimeout(() => reject(new Error('Timeout')), 5000)
                 );
                 
                 await Promise.race([testPromise, timeoutPromise]);
                 
                 this.solana.connection = connection;
                 this.solana.currentEndpoint = i;
-                console.log(`✅ Connected to: ${this.rpcEndpoints[i]}`);
-                this.showToast('Blockchain connection established', 'success', 2000);
+                this.solana.currentNetwork = endpoint.network;
+                
+                console.log(`✅ Connected to: ${endpoint.name} (${endpoint.network})`);
+                
+                if (endpoint.network === 'devnet') {
+                    this.showToast('Connected to Devnet - some features may show test data', 'warning', 4000);
+                } else {
+                    this.showToast('Blockchain connection established', 'success', 2000);
+                }
+                
                 return;
                 
             } catch (error) {
-                console.warn(`❌ RPC ${this.rpcEndpoints[i]} failed: ${error.message}`);
+                console.warn(`❌ RPC ${endpoint.name} failed: ${error.message}`);
                 continue;
             }
         }
@@ -333,7 +377,10 @@ class CypherApp {
 
         if (!this.solana.connection || this.solana.useApiOnly) {
             console.log('📡 No RPC connection - using enhanced demo data');
-            this.showToast('Wallet connected! RPC unavailable - showing demo portfolio with live prices.', 'info', 4000);
+            const networkNote = this.isDevnetConnected() ? 
+                'Wallet connected! Using Devnet demo portfolio with live prices.' : 
+                'Wallet connected! RPC unavailable - showing demo portfolio with live prices.';
+            this.showToast(networkNote, 'info', 4000);
             await this.loadEnhancedDemoData();
             return;
         }
@@ -849,21 +896,34 @@ class CypherApp {
 
     // REAL-TIME UPDATE METHODS
     startRealTimeUpdates() {
+        // More conservative update intervals to preserve API usage
         setInterval(() => {
             this.updateMarketData();
-        }, 30000);
+        }, 120000); // Every 2 minutes instead of 30 seconds
 
         setInterval(() => {
             if (this.state.wallet.connected) {
                 this.refreshPortfolioData();
             }
-        }, 60000);
+        }, 300000); // Every 5 minutes instead of 1 minute
 
-        console.log('🔄 Real-time updates started');
+        // Cache cleanup interval
+        setInterval(() => {
+            this.cache.cleanExpired();
+        }, 600000); // Every 10 minutes
+
+        console.log('🔄 Real-time updates started with optimized intervals');
+        this.showToast(`Connected to ${this.getNetworkDisplayName()} - Updates every 2min`, 'info');
     }
 
     async updateMarketData() {
         try {
+            // Check if we should skip this update to preserve API quota
+            if (this.shouldSkipMarketUpdate()) {
+                console.log('⏭️ Skipping market update to preserve API quota');
+                return;
+            }
+
             const marketData = await this.fetchMarketDataFromCoinGecko();
             if (marketData) {
                 this.state.market = { ...this.state.market, ...marketData };
@@ -872,9 +932,38 @@ class CypherApp {
                 if (this.state.wallet.connected && this.state.wallet.tokens.length > 0) {
                     this.updateTokenPricesInPortfolio(marketData);
                 }
+                
+                // Show network status in UI
+                this.updateNetworkStatus();
             }
         } catch (error) {
             console.error('Failed to update market data:', error);
+        }
+    }
+
+    shouldSkipMarketUpdate() {
+        const usage = this.state.analytics.apiUsage?.coingecko;
+        if (!usage) return false;
+        
+        const totalUsage = Object.values(usage).reduce((a, b) => a + b, 0);
+        
+        // Skip if we're over 80% of monthly limit
+        return totalUsage > 8000;
+    }
+
+    updateNetworkStatus() {
+        const networkEl = document.getElementById('networkStatus');
+        if (networkEl) {
+            const isDevnet = this.isDevnetConnected();
+            networkEl.innerHTML = `
+                <span class="network-indicator ${isDevnet ? 'devnet' : 'mainnet'}">
+                    ${this.getNetworkDisplayName()}
+                </span>
+            `;
+            
+            if (isDevnet) {
+                networkEl.title = 'Connected to Devnet - Test network for development';
+            }
         }
     }
 
@@ -1500,7 +1589,41 @@ class CypherApp {
         return this.sessionId;
     }
 
-    // STATE MANAGEMENT METHODS
+    // API USAGE TRACKING
+    trackApiUsage(service, endpoint) {
+        if (!this.state.analytics.apiUsage) {
+            this.state.analytics.apiUsage = {};
+        }
+        
+        if (!this.state.analytics.apiUsage[service]) {
+            this.state.analytics.apiUsage[service] = {};
+        }
+        
+        if (!this.state.analytics.apiUsage[service][endpoint]) {
+            this.state.analytics.apiUsage[service][endpoint] = 0;
+        }
+        
+        this.state.analytics.apiUsage[service][endpoint]++;
+        
+        // Log usage for monitoring
+        const totalUsage = Object.values(this.state.analytics.apiUsage[service]).reduce((a, b) => a + b, 0);
+        console.log(`📊 API Usage - ${service}: ${totalUsage} requests (${endpoint}: ${this.state.analytics.apiUsage[service][endpoint]})`);
+        
+        // Warn if approaching limits
+        if (service === 'coingecko' && totalUsage > 8000) {
+            console.warn('⚠️ Approaching CoinGecko API limit (10,000/month)');
+            this.showToast('High API usage detected', 'warning');
+        }
+    }
+
+    // NETWORK DETECTION
+    getNetworkDisplayName() {
+        return this.solana.currentNetwork === 'devnet' ? 'Devnet' : 'Mainnet';
+    }
+
+    isDevnetConnected() {
+        return this.solana.currentNetwork === 'devnet';
+    }
     async loadUserState() {
         try {
             const saved = localStorage.getItem('cypher_user_state');
@@ -1521,7 +1644,72 @@ class CypherApp {
         }
     }
 
-    // PLACEHOLDER METHODS (to be implemented)
+    // DASHBOARD UTILITIES
+    showApiStats() {
+        const coingeckoUsage = this.state.analytics.apiUsage?.coingecko || {};
+        const totalCoinGeckoUsage = Object.values(coingeckoUsage).reduce((a, b) => a + b, 0);
+        const cacheStats = this.cache.getStats();
+        const networkStatus = this.getNetworkDisplayName();
+        
+        const statsHTML = `
+            <div class="api-stats-modal">
+                <h3>📊 API & System Status</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Network:</span>
+                        <span class="stat-value ${this.isDevnetConnected() ? 'devnet' : 'mainnet'}">${networkStatus}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">CoinGecko Usage:</span>
+                        <span class="stat-value">${totalCoinGeckoUsage}/10,000</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Cache Hit Rate:</span>
+                        <span class="stat-value">${cacheStats.valid}/${cacheStats.total}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">RPC Status:</span>
+                        <span class="stat-value ${this.solana.connection ? 'connected' : 'disconnected'}">
+                            ${this.solana.connection ? 'Connected' : 'API-Only Mode'}
+                        </span>
+                    </div>
+                </div>
+                <button onclick="this.parentElement.remove()" class="btn btn-secondary">Close</button>
+            </div>
+        `;
+        
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.innerHTML = statsHTML;
+        document.body.appendChild(overlay);
+        
+        // Auto-remove after 10 seconds
+        setTimeout(() => {
+            if (overlay.parentElement) {
+                overlay.remove();
+            }
+        }, 10000);
+    }
+
+    // Enhanced error messages with actionable information
+    showEnhancedError(message, context = {}) {
+        let enhancedMessage = message;
+        
+        if (context.isRateLimited) {
+            enhancedMessage += ' (Rate limited - using cached data)';
+        }
+        
+        if (context.isDevnet) {
+            enhancedMessage += ' (Devnet mode - some data may be test data)';
+        }
+        
+        if (context.apiQuotaLow) {
+            enhancedMessage += ' (API quota running low - reducing update frequency)';
+        }
+        
+        this.showToast(enhancedMessage, 'error', 7000);
+        console.error(message, context);
+    }
     initializeTooltips() {
         console.log('Tooltips initialized');
     }
@@ -1563,21 +1751,35 @@ class CypherApp {
 class DataCache {
     constructor() {
         this.cache = new Map();
-        this.ttl = 60000;
+        this.defaultTTL = 120000; // 2 minutes default
+        this.ttlConfig = {
+            'solana_market_data': 120000,        // 2 minutes for market data
+            'token_prices': 60000,               // 1 minute for token prices
+            'wallet_data': 30000,                // 30 seconds for wallet data
+            'demo_prices': 300000                // 5 minutes for demo data
+        };
     }
     
-    set(key, data) {
+    set(key, data, customTTL = null) {
+        const ttl = customTTL || this.getTTLForKey(key);
         this.cache.set(key, {
             data,
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            ttl: ttl
         });
+        
+        // Clean up expired entries periodically
+        if (this.cache.size > 50) {
+            this.cleanExpired();
+        }
     }
     
     get(key) {
         const cached = this.cache.get(key);
         if (!cached) return null;
         
-        if (Date.now() - cached.timestamp > this.ttl) {
+        const age = Date.now() - cached.timestamp;
+        if (age > cached.ttl) {
             this.cache.delete(key);
             return null;
         }
@@ -1585,37 +1787,86 @@ class DataCache {
         return cached.data;
     }
     
+    getTTLForKey(key) {
+        // Check for pattern matches
+        for (const [pattern, ttl] of Object.entries(this.ttlConfig)) {
+            if (key.includes(pattern)) {
+                return ttl;
+            }
+        }
+        return this.defaultTTL;
+    }
+    
+    cleanExpired() {
+        const now = Date.now();
+        for (const [key, value] of this.cache.entries()) {
+            if (now - value.timestamp > value.ttl) {
+                this.cache.delete(key);
+            }
+        }
+    }
+    
     clear() {
         this.cache.clear();
+    }
+    
+    getStats() {
+        const now = Date.now();
+        let valid = 0;
+        let expired = 0;
+        
+        for (const [key, value] of this.cache.entries()) {
+            if (now - value.timestamp <= value.ttl) {
+                valid++;
+            } else {
+                expired++;
+            }
+        }
+        
+        return { total: this.cache.size, valid, expired };
     }
 }
 
 class APIManager {
     constructor() {
         this.lastCalls = new Map();
-        this.minInterval = 1000;
+        this.minIntervals = {
+            'coingecko': 6000,    // 6 seconds between CoinGecko calls (more conservative)
+            'solana_rpc': 1000,   // 1 second between RPC calls
+            'default': 2000       // 2 seconds default
+        };
+        this.requestCounts = new Map();
     }
     
-    async rateLimitedFetch(url, key = 'default') {
+    async rateLimitedFetch(url, options = {}, serviceType = 'default') {
         const now = Date.now();
-        const lastCall = this.lastCalls.get(key) || 0;
+        const lastCall = this.lastCalls.get(serviceType) || 0;
+        const minInterval = this.minIntervals[serviceType] || this.minIntervals.default;
         const timeSince = now - lastCall;
         
-        if (timeSince < this.minInterval) {
-            await new Promise(resolve => 
-                setTimeout(resolve, this.minInterval - timeSince)
-            );
+        if (timeSince < minInterval) {
+            const waitTime = minInterval - timeSince;
+            console.log(`⏳ Rate limiting: waiting ${waitTime}ms for ${serviceType}`);
+            await new Promise(resolve => setTimeout(resolve, waitTime));
         }
         
-        this.lastCalls.set(key, Date.now());
+        this.lastCalls.set(serviceType, Date.now());
+        
+        // Track request counts
+        const count = this.requestCounts.get(serviceType) || 0;
+        this.requestCounts.set(serviceType, count + 1);
         
         try {
-            const response = await fetch(url);
+            const response = await fetch(url, options);
             return response;
         } catch (error) {
             console.error(`API call failed for ${url}:`, error);
             throw error;
         }
+    }
+    
+    getRequestStats() {
+        return Object.fromEntries(this.requestCounts);
     }
 }
 
@@ -1626,7 +1877,41 @@ const app = new CypherApp();
 window.app = app;
 window.connectWallet = () => app.connectWallet();
 window.switchSection = (section) => app.switchSection(section);
-window.showHelp = () => app.showToast('Help system coming soon!', 'info');
+window.showHelp = () => {
+    const helpModal = `
+        <div class="modal-overlay">
+            <div class="modal-content">
+                <h3>🚀 Cypher Help & Features</h3>
+                <div class="help-content">
+                    <h4>🔗 Connected Services:</h4>
+                    <ul>
+                        <li><strong>Extrnode RPC:</strong> Mainnet blockchain access</li>
+                        <li><strong>Alchemy RPC:</strong> Devnet fallback connection</li>
+                        <li><strong>CoinGecko Pro:</strong> Real-time price data</li>
+                    </ul>
+                    
+                    <h4>⌨️ Keyboard Shortcuts:</h4>
+                    <ul>
+                        <li><kbd>Ctrl/Cmd + R</kbd>: Refresh portfolio</li>
+                    </ul>
+                    
+                    <h4>🛠️ Debug Functions:</h4>
+                    <ul>
+                        <li><code>showApiStats()</code>: View API usage statistics</li>
+                        <li><code>clearCache()</code>: Clear cached data</li>
+                        <li><code>forceMarketUpdate()</code>: Force fresh market data</li>
+                    </ul>
+                    
+                    <h4>📊 Network Status:</h4>
+                    <p>Check the network indicator to see if you're on Mainnet or Devnet.</p>
+                </div>
+                <button onclick="this.closest('.modal-overlay').remove()" class="btn btn-primary">Got it!</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', helpModal);
+};
 
 // CHART FUNCTIONS
 window.changeChartTimeframe = (timeframe) => {
@@ -1754,4 +2039,29 @@ window.setCustomThreshold = () => {
     if (customValue) {
         app.showToast(`Custom whale threshold set to ${customValue} SOL`, 'info');
     }
+};
+
+// NEW API MANAGEMENT FUNCTIONS
+window.showApiStats = () => {
+    app.showApiStats();
+};
+
+window.clearCache = () => {
+    app.cache.clear();
+    app.showToast('Cache cleared - fresh data will be fetched', 'info');
+};
+
+window.toggleUpdateFrequency = () => {
+    const currentInterval = app.updateInterval || 120000;
+    const newInterval = currentInterval === 120000 ? 300000 : 120000;
+    app.updateInterval = newInterval;
+    
+    const frequency = newInterval === 120000 ? '2 minutes' : '5 minutes';
+    app.showToast(`Update frequency changed to every ${frequency}`, 'info');
+};
+
+window.forceMarketUpdate = async () => {
+    app.showToast('Forcing market data update...', 'info');
+    await app.updateMarketData();
+    app.showToast('Market data updated!', 'success');
 };
