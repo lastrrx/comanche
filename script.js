@@ -1,5 +1,5 @@
-// Enhanced Cypher Portfolio Analytics - v3.0
-// Real API Integration with Live Data
+// Enhanced Cypher Portfolio Analytics - v3.1
+// Fixed RPC and API Integration for GitHub Pages
 
 class CypherApp {
     constructor() {
@@ -35,6 +35,7 @@ class CypherApp {
                 solPrice: 0,
                 marketCap: 0,
                 volume24h: 0,
+                priceChange24h: 0,
                 sentiment: 'neutral',
                 trending: [],
                 gainers: [],
@@ -78,27 +79,17 @@ class CypherApp {
             }
         };
         
-        // Enhanced API configuration with real endpoints
-        this.api = {
-            endpoints: {
-                jupiter: 'https://price.jup.ag/v4',
-                coingecko: 'https://api.coingecko.com/api/v3',
-                dexscreener: 'https://api.dexscreener.com/latest/dex',
-                birdeye: 'https://public-api.birdeye.so/defi',
-                solana: 'https://api.mainnet-beta.solana.com',
-                solanaBackup: 'https://rpc.ankr.com/solana'
-            },
-            rateLimits: new Map(),
-            cache: new Map(),
-            retryConfig: { maxRetries: 3, backoffMs: 1000 }
-        };
+        // Working RPC endpoints for GitHub Pages
+        this.rpcEndpoints = [
+            'https://api.mainnet-beta.solana.com',
+            'https://solana-api.projectserum.com',
+            'https://rpc.ankr.com/solana'
+        ];
         
-        // Solana connection with fallback
+        // Solana connection
         this.solana = {
             connection: null,
-            rpcEndpoint: 'https://api.mainnet-beta.solana.com',
-            backupEndpoint: 'https://rpc.ankr.com/solana',
-            commitment: 'confirmed'
+            currentEndpoint: 0
         };
 
         // Data cache manager
@@ -107,12 +98,38 @@ class CypherApp {
         // API rate limiter
         this.apiManager = new APIManager();
 
-        // Known token addresses for mapping
+        // Extended token registry with more popular tokens
         this.tokenRegistry = {
-            'So11111111111111111111111111111111111111112': { symbol: 'SOL', name: 'Solana', decimals: 9 },
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { symbol: 'USDC', name: 'USD Coin', decimals: 6 },
-            'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { symbol: 'BONK', name: 'Bonk', decimals: 5 },
-            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { symbol: 'USDT', name: 'Tether USD', decimals: 6 }
+            'So11111111111111111111111111111111111111112': { 
+                symbol: 'SOL', 
+                name: 'Solana', 
+                decimals: 9,
+                coingeckoId: 'solana'
+            },
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { 
+                symbol: 'USDC', 
+                name: 'USD Coin', 
+                decimals: 6,
+                coingeckoId: 'usd-coin'
+            },
+            'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { 
+                symbol: 'BONK', 
+                name: 'Bonk', 
+                decimals: 5,
+                coingeckoId: 'bonk'
+            },
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { 
+                symbol: 'USDT', 
+                name: 'Tether USD', 
+                decimals: 6,
+                coingeckoId: 'tether'
+            },
+            'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So': {
+                symbol: 'mSOL',
+                name: 'Marinade SOL',
+                decimals: 9,
+                coingeckoId: 'marinade-staked-sol'
+            }
         };
         
         this.init();
@@ -125,8 +142,8 @@ class CypherApp {
             // Load user preferences and state
             await this.loadUserState();
             
-            // Initialize Solana connection
-            await this.initSolanaConnection();
+            // Initialize Solana connection with retry logic
+            await this.initSolanaConnectionWithRetry();
             
             // Set up event listeners
             this.setupEventListeners();
@@ -141,8 +158,8 @@ class CypherApp {
             await this.checkExistingWalletConnection();
             
             // Show onboarding for first-time users
-            if (this.state.user.isFirstTime) {
-                this.showOnboarding();
+            if (this.state.user.isFirstTime && !this.state.wallet.connected) {
+                setTimeout(() => this.showOnboarding(), 1000);
             }
             
             this.state.initialized = true;
@@ -161,106 +178,155 @@ class CypherApp {
     }
 
     // =================
-    // REAL DATA INTEGRATION
+    // FIXED SOLANA CONNECTION
+    // =================
+
+    async initSolanaConnectionWithRetry() {
+        this.updateLoadingStatus('Connecting to Solana network...');
+        
+        // Check if Solana Web3 is available
+        if (typeof solanaWeb3 === 'undefined') {
+            console.error('❌ Solana Web3.js not loaded');
+            this.solana.connection = null;
+            return;
+        }
+
+        for (let i = 0; i < this.rpcEndpoints.length; i++) {
+            try {
+                console.log(`🔄 Trying RPC endpoint: ${this.rpcEndpoints[i]}`);
+                
+                const connection = new solanaWeb3.Connection(
+                    this.rpcEndpoints[i], 
+                    'confirmed'
+                );
+                
+                // Test connection with timeout
+                const testPromise = connection.getLatestBlockhash();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                );
+                
+                await Promise.race([testPromise, timeoutPromise]);
+                
+                this.solana.connection = connection;
+                this.solana.currentEndpoint = i;
+                console.log(`✅ Solana RPC connected: ${this.rpcEndpoints[i]}`);
+                return;
+                
+            } catch (error) {
+                console.warn(`❌ RPC endpoint ${this.rpcEndpoints[i]} failed:`, error.message);
+                continue;
+            }
+        }
+        
+        console.error('❌ All Solana RPC endpoints failed');
+        this.solana.connection = null;
+    }
+
+    // =================
+    // FIXED API INTEGRATION
     // =================
 
     async loadInitialMarketData() {
         try {
             this.updateLoadingStatus('Loading market data...');
             
-            // Load SOL price and basic market data
-            const marketData = await this.fetchMarketOverview();
+            // Use CoinGecko API with proper error handling
+            const marketData = await this.fetchMarketDataFromCoinGecko();
             
             if (marketData) {
                 this.state.market = { ...this.state.market, ...marketData };
                 this.updateMarketUI();
+                console.log('✅ Market data loaded successfully');
+            } else {
+                throw new Error('Failed to fetch market data');
             }
             
         } catch (error) {
-            console.error('Failed to load initial market data:', error);
-            // Continue with demo data if API fails
+            console.error('❌ Failed to load market data:', error);
+            // Use fallback data
             this.loadMockMarketData();
         }
     }
 
-    async fetchMarketOverview() {
+    async fetchMarketDataFromCoinGecko() {
         try {
-            // Get SOL price from CoinGecko (free, no API key needed)
-            const priceData = await this.apiManager.rateLimitedFetch(
+            const response = await fetch(
                 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true',
-                'coingecko'
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                }
             );
 
-            if (!priceData.ok) {
-                throw new Error(`CoinGecko API error: ${priceData.status}`);
+            if (!response.ok) {
+                throw new Error(`CoinGecko API error: ${response.status}`);
             }
 
-            const data = await priceData.json();
+            const data = await response.json();
             const solData = data.solana;
 
+            if (!solData) {
+                throw new Error('Invalid CoinGecko response');
+            }
+
             return {
-                solPrice: solData.usd,
-                marketCap: solData.usd_market_cap,
-                volume24h: solData.usd_24h_vol,
-                priceChange24h: solData.usd_24h_change
+                solPrice: solData.usd || 0,
+                marketCap: solData.usd_market_cap || 0,
+                volume24h: solData.usd_24h_vol || 0,
+                priceChange24h: solData.usd_24h_change || 0
             };
 
         } catch (error) {
-            console.error('Market data fetch failed:', error);
+            console.error('CoinGecko API failed:', error);
             return null;
         }
     }
 
-    async fetchTokenPrices(tokenIds) {
+    async fetchTokenPricesFromCoinGecko(tokens) {
         try {
-            // Use Jupiter API for Solana token prices
-            const response = await this.apiManager.rateLimitedFetch(
-                `https://price.jup.ag/v4/price?ids=${tokenIds.join(',')}`,
-                'jupiter'
+            // Map token addresses to CoinGecko IDs
+            const geckoIds = tokens.map(token => {
+                const tokenInfo = this.tokenRegistry[token.address];
+                return tokenInfo?.coingeckoId;
+            }).filter(Boolean);
+
+            if (geckoIds.length === 0) {
+                return {};
+            }
+
+            const response = await fetch(
+                `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true`
             );
 
             if (!response.ok) {
-                throw new Error(`Jupiter API error: ${response.status}`);
+                throw new Error(`CoinGecko price API error: ${response.status}`);
             }
 
             return await response.json();
 
         } catch (error) {
             console.error('Token price fetch failed:', error);
-            
-            // Fallback to CoinGecko for known tokens
-            return await this.fetchTokenPricesFallback(tokenIds);
+            return {};
         }
     }
 
-    async fetchTokenPricesFallback(tokenIds) {
-        try {
-            // Map Solana token addresses to CoinGecko IDs (limited but reliable)
-            const geckoIds = tokenIds.map(id => {
-                const token = this.tokenRegistry[id];
-                if (token?.symbol === 'SOL') return 'solana';
-                if (token?.symbol === 'USDC') return 'usd-coin';
-                return null;
-            }).filter(Boolean);
-
-            if (geckoIds.length === 0) return null;
-
-            const response = await this.apiManager.rateLimitedFetch(
-                `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd`,
-                'coingecko-fallback'
-            );
-
-            return await response.json();
-
-        } catch (error) {
-            console.error('Fallback price fetch failed:', error);
-            return null;
-        }
-    }
+    // =================
+    // FIXED WALLET DATA LOADING
+    // =================
 
     async loadRealWalletData() {
-        if (!this.state.wallet.connected || !this.solana.connection) {
-            console.log('Cannot load wallet data: wallet not connected or no RPC connection');
+        if (!this.state.wallet.connected) {
+            console.log('❌ Wallet not connected');
+            return;
+        }
+
+        if (!this.solana.connection) {
+            console.log('❌ No RPC connection available');
+            this.showToast('Unable to connect to Solana network. Using demo data.', 'warning');
+            this.loadMockWalletData();
             return;
         }
 
@@ -270,88 +336,76 @@ class CypherApp {
             const publicKey = new solanaWeb3.PublicKey(this.state.wallet.publicKey);
             
             // Get SOL balance
-            const solBalance = await this.getSolBalance(publicKey);
+            const solBalance = await this.getSolBalanceWithRetry(publicKey);
             
             // Get token accounts
-            const tokenAccounts = await this.getTokenAccounts(publicKey);
+            const tokenAccounts = await this.getTokenAccountsWithRetry(publicKey);
             
-            // Get prices for all tokens
-            const tokenPrices = await this.getTokenPrices(tokenAccounts);
-            
-            // Calculate portfolio
-            const portfolio = this.calculatePortfolio(solBalance, tokenAccounts, tokenPrices);
+            // Process tokens and get prices
+            const processedTokens = await this.processTokenAccounts(tokenAccounts, solBalance);
             
             // Update state
             this.state.wallet.balance = solBalance;
-            this.state.wallet.tokens = portfolio.tokens;
-            this.state.wallet.performance = portfolio.performance;
+            this.state.wallet.tokens = processedTokens.tokens;
+            this.state.wallet.performance = processedTokens.performance;
             
             // Update UI
             this.updateWalletUI();
             this.updatePortfolioCharts();
             
             console.log('✅ Real wallet data loaded successfully');
+            this.showToast('Portfolio loaded successfully!', 'success');
             
         } catch (error) {
-            console.error('Error loading real wallet data:', error);
+            console.error('❌ Error loading wallet data:', error);
             this.showToast('Failed to load wallet data. Using demo data.', 'warning');
             this.loadMockWalletData();
         }
     }
 
-    async getSolBalance(publicKey) {
-        try {
-            const balance = await this.solana.connection.getBalance(publicKey);
-            return balance / solanaWeb3.LAMPORTS_PER_SOL;
-        } catch (error) {
-            console.error('Failed to get SOL balance:', error);
-            return 0;
+    async getSolBalanceWithRetry(publicKey, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const balance = await this.solana.connection.getBalance(publicKey);
+                return balance / solanaWeb3.LAMPORTS_PER_SOL;
+            } catch (error) {
+                console.warn(`SOL balance fetch attempt ${i + 1} failed:`, error);
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            }
         }
     }
 
-    async getTokenAccounts(publicKey) {
-        try {
-            const accounts = await this.solana.connection.getParsedTokenAccountsByOwner(
-                publicKey,
-                { programId: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
-            );
-            
-            return accounts.value.filter(account => {
-                const amount = account.account.data.parsed.info.tokenAmount.uiAmount;
-                return amount && amount > 0;
-            });
-            
-        } catch (error) {
-            console.error('Failed to get token accounts:', error);
-            return [];
+    async getTokenAccountsWithRetry(publicKey, maxRetries = 3) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const accounts = await this.solana.connection.getParsedTokenAccountsByOwner(
+                    publicKey,
+                    { 
+                        programId: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') 
+                    }
+                );
+                
+                return accounts.value.filter(account => {
+                    const amount = account.account.data.parsed.info.tokenAmount.uiAmount;
+                    return amount && amount > 0;
+                });
+                
+            } catch (error) {
+                console.warn(`Token accounts fetch attempt ${i + 1} failed:`, error);
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            }
         }
     }
 
-    async getTokenPrices(tokenAccounts) {
-        const uniqueTokens = [...new Set(tokenAccounts.map(account => 
-            account.account.data.parsed.info.mint
-        ))];
-        
-        // Add SOL
-        uniqueTokens.push('So11111111111111111111111111111111111111112');
-        
-        try {
-            const prices = await this.fetchTokenPrices(uniqueTokens);
-            return prices;
-        } catch (error) {
-            console.error('Failed to get token prices:', error);
-            return {};
-        }
-    }
-
-    calculatePortfolio(solBalance, tokenAccounts, prices) {
+    async processTokenAccounts(tokenAccounts, solBalance) {
         const tokens = [];
-        let totalValue = 0;
-
-        // Add SOL
+        
+        // Add SOL first
         const solPrice = this.state.market.solPrice || 0;
         const solValue = solBalance * solPrice;
-        totalValue += solValue;
+        let totalValue = solValue;
         
         tokens.push({
             address: 'So11111111111111111111111111111111111111112',
@@ -364,7 +418,8 @@ class CypherApp {
             isNative: true
         });
 
-        // Add SPL tokens
+        // Process SPL tokens
+        const tokenList = [];
         tokenAccounts.forEach(account => {
             const tokenInfo = account.account.data.parsed.info;
             const mint = tokenInfo.mint;
@@ -373,29 +428,47 @@ class CypherApp {
             const tokenMeta = this.tokenRegistry[mint] || {
                 symbol: mint.slice(0, 4) + '...',
                 name: 'Unknown Token',
-                decimals: tokenInfo.tokenAmount.decimals
+                decimals: tokenInfo.tokenAmount.decimals,
+                coingeckoId: null
             };
 
-            // Get price from our fetched data
-            let price = 0;
-            if (prices?.data?.[mint]) {
-                price = prices.data[mint].price || 0;
-            }
-
-            const value = amount * price;
-            totalValue += value;
-
-            tokens.push({
+            tokenList.push({
                 address: mint,
                 symbol: tokenMeta.symbol,
                 name: tokenMeta.name,
                 amount: amount,
-                price: price,
-                value: value,
-                change24h: 0, // Would need additional API calls
-                isNative: false
+                price: 0, // Will be filled by price fetch
+                value: 0,
+                change24h: 0,
+                isNative: false,
+                coingeckoId: tokenMeta.coingeckoId
             });
         });
+
+        // Get prices for SPL tokens
+        if (tokenList.length > 0) {
+            try {
+                const prices = await this.fetchTokenPricesFromCoinGecko(tokenList);
+                
+                tokenList.forEach(token => {
+                    if (token.coingeckoId && prices[token.coingeckoId]) {
+                        const priceData = prices[token.coingeckoId];
+                        token.price = priceData.usd || 0;
+                        token.change24h = priceData.usd_24h_change || 0;
+                        token.value = token.amount * token.price;
+                        totalValue += token.value;
+                    }
+                });
+            } catch (error) {
+                console.warn('Failed to fetch token prices:', error);
+            }
+        }
+
+        // Add processed tokens to main list
+        tokens.push(...tokenList);
+
+        // Sort by value (highest first)
+        tokens.sort((a, b) => b.value - a.value);
 
         // Calculate performance metrics
         const previousValue = this.state.wallet.performance.totalValue || totalValue;
@@ -403,7 +476,7 @@ class CypherApp {
         const dayChangePercent = previousValue > 0 ? (dayChange / previousValue) * 100 : 0;
 
         return {
-            tokens: tokens.sort((a, b) => b.value - a.value),
+            tokens,
             performance: {
                 totalValue,
                 dayChange,
@@ -415,7 +488,7 @@ class CypherApp {
     }
 
     // =================
-    // NAVIGATION SYSTEM (ENHANCED)
+    // NAVIGATION SYSTEM
     // =================
     
     switchSection(sectionName) {
@@ -456,7 +529,7 @@ class CypherApp {
     }
     
     // =================
-    // WALLET MANAGEMENT (ENHANCED)
+    // WALLET MANAGEMENT
     // =================
     
     async connectWallet(walletType = 'auto') {
@@ -578,6 +651,9 @@ class CypherApp {
         
         // Update portfolio stats
         this.updatePortfolioStats();
+        
+        // Update holdings list
+        this.updateHoldingsList();
     }
 
     updatePortfolioStats() {
@@ -586,7 +662,7 @@ class CypherApp {
         // Update total value
         const totalValueEl = document.getElementById('totalValue');
         if (totalValueEl) {
-            totalValueEl.textContent = `$${performance.totalValue.toLocaleString(undefined, {
+            totalValueEl.textContent = `${performance.totalValue.toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             })}`;
@@ -606,7 +682,7 @@ class CypherApp {
             portfolioGainEl.textContent = `${isPositive ? '+' : ''}${performance.dayChangePercent.toFixed(2)}%`;
             portfolioGainEl.className = `stat-value ${isPositive ? 'positive' : 'negative'}`;
             
-            gainAmountEl.textContent = `${isPositive ? '+' : ''}$${Math.abs(performance.dayChange).toLocaleString(undefined, {
+            gainAmountEl.textContent = `${isPositive ? '+' : ''}${Math.abs(performance.dayChange).toLocaleString(undefined, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
             })}`;
@@ -616,8 +692,64 @@ class CypherApp {
         // Update center allocation chart value
         const centerValueEl = document.getElementById('centerValue');
         if (centerValueEl) {
-            centerValueEl.textContent = `$${Math.round(performance.totalValue).toLocaleString()}`;
+            centerValueEl.textContent = `${Math.round(performance.totalValue).toLocaleString()}`;
         }
+
+        // Update total change text
+        const totalChangeEl = document.getElementById('totalChange');
+        if (totalChangeEl && this.state.wallet.connected) {
+            const isPositive = performance.dayChangePercent >= 0;
+            totalChangeEl.innerHTML = `<span class="${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${performance.dayChangePercent.toFixed(2)}% today</span>`;
+        }
+    }
+
+    updateHoldingsList() {
+        const tokenListEl = document.getElementById('tokenList');
+        if (!tokenListEl) return;
+
+        if (this.state.wallet.tokens.length === 0) {
+            // Show empty state
+            tokenListEl.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                    <h4>No Holdings Found</h4>
+                    <p>Your portfolio appears to be empty or we couldn't load your token data.</p>
+                    <button class="btn btn-primary" onclick="refreshPortfolio()">
+                        <i class="fas fa-refresh"></i> Refresh Portfolio
+                    </button>
+                </div>
+            `;
+            return;
+        }
+
+        // Show token holdings
+        tokenListEl.innerHTML = this.state.wallet.tokens.map(token => {
+            const isPositive = token.change24h >= 0;
+            const changeClass = isPositive ? 'positive' : 'negative';
+            const changeIcon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+            
+            return `
+                <div class="token-item" style="display: flex; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <div class="token-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; margin-right: 1rem;">
+                        ${token.symbol.charAt(0)}
+                    </div>
+                    <div class="token-info" style="flex: 1;">
+                        <div class="token-symbol" style="font-weight: 600; color: #ffffff; font-size: 1rem;">${token.symbol}</div>
+                        <div class="token-name" style="color: #a3a3a3; font-size: 0.875rem;">${token.name}</div>
+                    </div>
+                    <div class="token-amount" style="text-align: right; margin-right: 1rem;">
+                        <div style="font-weight: 600; color: #ffffff;">${token.amount.toLocaleString(undefined, {maximumFractionDigits: 6})}</div>
+                        <div style="color: #a3a3a3; font-size: 0.875rem;">${token.price.toFixed(4)}</div>
+                    </div>
+                    <div class="token-value" style="text-align: right; margin-right: 1rem;">
+                        <div style="font-weight: 600; color: #ffffff;">${token.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                        <div class="${changeClass}" style="font-size: 0.875rem;">
+                            <i class="fas ${changeIcon}"></i> ${Math.abs(token.change24h).toFixed(2)}%
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     updateMarketUI() {
@@ -625,7 +757,7 @@ class CypherApp {
         const solPriceEl = document.getElementById('solPrice');
         const solChangeEl = document.getElementById('solChange');
         if (solPriceEl && solChangeEl) {
-            solPriceEl.textContent = `$${this.state.market.solPrice.toFixed(2)}`;
+            solPriceEl.textContent = `${this.state.market.solPrice.toFixed(2)}`;
             
             const change = this.state.market.priceChange24h || 0;
             const isPositive = change >= 0;
@@ -636,7 +768,7 @@ class CypherApp {
         const marketVolEl = document.getElementById('marketVol');
         if (marketVolEl) {
             const volume = this.state.market.volume24h || 0;
-            marketVolEl.textContent = `$${this.formatLargeNumber(volume)}`;
+            marketVolEl.textContent = `${this.formatLargeNumber(volume)}`;
         }
     }
 
@@ -669,10 +801,27 @@ class CypherApp {
 
     async updateMarketData() {
         try {
-            const marketData = await this.fetchMarketOverview();
+            const marketData = await this.fetchMarketDataFromCoinGecko();
             if (marketData) {
                 this.state.market = { ...this.state.market, ...marketData };
                 this.updateMarketUI();
+                
+                // Update SOL price in portfolio if connected
+                if (this.state.wallet.connected && this.state.wallet.tokens.length > 0) {
+                    const solToken = this.state.wallet.tokens.find(t => t.symbol === 'SOL');
+                    if (solToken) {
+                        solToken.price = marketData.solPrice;
+                        solToken.value = solToken.amount * marketData.solPrice;
+                        solToken.change24h = marketData.priceChange24h;
+                        
+                        // Recalculate total portfolio value
+                        const totalValue = this.state.wallet.tokens.reduce((sum, token) => sum + token.value, 0);
+                        this.state.wallet.performance.totalValue = totalValue;
+                        
+                        this.updatePortfolioStats();
+                        this.updatePortfolioCharts();
+                    }
+                }
             }
         } catch (error) {
             console.error('Failed to update market data:', error);
@@ -751,7 +900,7 @@ class CypherApp {
 
     generateMockHistoricalData(currentValue, days = 7) {
         const data = [];
-        const volatility = 0.05; // 5% daily volatility
+        const volatility = 0.02; // 2% daily volatility
         
         for (let i = days; i >= 0; i--) {
             const randomChange = (Math.random() - 0.5) * volatility;
@@ -763,11 +912,13 @@ class CypherApp {
     }
 
     // =================
-    // LOADING FALLBACKS
+    // FALLBACK DATA
     // =================
 
     loadMockWalletData() {
         // Enhanced mock data for demonstration
+        const solPrice = this.state.market.solPrice || 98.50;
+        
         this.state.wallet.balance = 15.7;
         this.state.wallet.tokens = [
             {
@@ -775,10 +926,9 @@ class CypherApp {
                 symbol: 'SOL',
                 name: 'Solana',
                 amount: 15.7,
-                price: this.state.market.solPrice || 98.50,
-                value: 15.7 * (this.state.market.solPrice || 98.50),
+                price: solPrice,
+                value: 15.7 * solPrice,
                 change24h: this.state.market.priceChange24h || 5.2,
-                logo: null,
                 isNative: true
             },
             {
@@ -789,7 +939,6 @@ class CypherApp {
                 price: 1.0,
                 value: 250.0,
                 change24h: 0.1,
-                logo: null,
                 isNative: false
             },
             {
@@ -800,7 +949,6 @@ class CypherApp {
                 price: 0.000023,
                 value: 23.0,
                 change24h: -12.5,
-                logo: null,
                 isNative: false
             }
         ];
@@ -830,80 +978,10 @@ class CypherApp {
     }
 
     // =================
-    // SECTION DATA LOADING
-    // =================
-    
-    async loadSectionData(sectionName) {
-        switch (sectionName) {
-            case 'portfolio':
-                await this.refreshPortfolioData();
-                break;
-            case 'analytics':
-                await this.loadAnalyticsData();
-                break;
-            case 'market':
-                await this.loadMarketData();
-                break;
-            case 'whale':
-                await this.loadWhaleData();
-                break;
-            case 'alerts':
-                this.renderAlerts();
-                break;
-            case 'social':
-                await this.loadSocialData();
-                break;
-        }
-    }
-
-    // =================
-    // INITIALIZATION METHODS (ENHANCED)
+    // UI COMPONENTS (Previous implementations continue...)
     // =================
 
-    async initSolanaConnection() {
-        try {
-            if (typeof solanaWeb3 !== 'undefined') {
-                // Try primary endpoint first
-                this.solana.connection = new solanaWeb3.Connection(
-                    this.solana.rpcEndpoint, 
-                    this.solana.commitment
-                );
-                
-                // Test connection
-                await this.solana.connection.getLatestBlockhash();
-                console.log('✅ Solana connection initialized');
-            }
-        } catch (error) {
-            console.warn('❌ Primary RPC failed, trying backup...', error);
-            
-            // Try backup endpoint
-            try {
-                this.solana.connection = new solanaWeb3.Connection(
-                    this.solana.backupEndpoint, 
-                    this.solana.commitment
-                );
-                await this.solana.connection.getLatestBlockhash();
-                console.log('✅ Backup Solana connection initialized');
-            } catch (backupError) {
-                console.error('❌ All Solana RPC endpoints failed:', backupError);
-                this.solana.connection = null;
-            }
-        }
-    }
-
-    // =================
-    // UTILITY CLASSES FOR API MANAGEMENT
-    // =================
-    
-    // [Previous methods continue here - onboarding, UI management, etc.]
-    // I'll continue with the rest of the implementation...
-
-    // =================
-    // ONBOARDING SYSTEM (EXISTING)
-    // =================
-    
     showOnboarding() {
-        // Create and show onboarding modal
         const modalHTML = `
             <div id="welcomeModal" class="modal-overlay">
                 <div class="modal-content welcome-content">
@@ -921,13 +999,13 @@ class CypherApp {
                             <div class="feature-preview">
                                 <i class="fas fa-rocket step-icon"></i>
                                 <h4>Real-Time Portfolio Tracking</h4>
-                                <p>Track your Solana investments with live data, real-time analytics, and performance metrics powered by Jupiter and CoinGecko APIs.</p>
+                                <p>Track your Solana investments with live data from CoinGecko and real blockchain data. Connect your wallet to see your actual holdings and performance.</p>
                             </div>
                             <ul class="feature-list">
                                 <li><i class="fas fa-check"></i> Live portfolio valuation</li>
                                 <li><i class="fas fa-check"></i> Real-time price feeds</li>
-                                <li><i class="fas fa-check"></i> Risk analysis & diversification scores</li>
-                                <li><i class="fas fa-check"></i> Whale tracking & social trading</li>
+                                <li><i class="fas fa-check"></i> Blockchain data integration</li>
+                                <li><i class="fas fa-check"></i> Professional-grade analytics</li>
                             </ul>
                         </div>
                     </div>
@@ -963,42 +1041,30 @@ class CypherApp {
         this.state.user.onboardingCompleted = true;
         this.saveUserState();
         
-        // Close onboarding modal
         const modal = document.getElementById('welcomeModal');
         if (modal) {
             modal.remove();
             this.state.ui.modals.delete('welcome');
         }
         
-        // Show welcome message
-        this.showToast('Welcome to Cypher! 🎉', 'success');
+        this.showToast('Welcome to Cypher! Connect your wallet to get started. 🎉', 'success');
         
-        // Start tutorial hints if wallet not connected
         if (!this.state.wallet.connected) {
             setTimeout(() => {
                 this.showTooltip('connectWallet', 'Connect your wallet to start tracking your portfolio with live data!');
             }, 2000);
         }
     }
-    
+
     // =================
-    // UI MANAGEMENT (ENHANCED)
+    // UTILITY AND UI METHODS
     // =================
-    
+
     initializeUI() {
-        // Set up global search
         this.setupGlobalSearch();
-        
-        // Initialize charts
         this.initializeCharts();
-        
-        // Set up tooltips
         this.initializeTooltips();
-        
-        // Set up responsive handlers
         this.setupResponsiveHandlers();
-        
-        // Initialize modals
         this.initializeModals();
     }
     
@@ -1022,7 +1088,6 @@ class CypherApp {
                 }
             });
             
-            // Hide results when clicking outside
             document.addEventListener('click', (e) => {
                 if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
                     searchResults.style.display = 'none';
@@ -1038,12 +1103,8 @@ class CypherApp {
             searchResults.innerHTML = '<div class="search-loading">Searching...</div>';
             searchResults.style.display = 'block';
             
-            // Search in current portfolio first
             const portfolioResults = this.searchPortfolio(query);
-            
-            // Search popular tokens from registry
             const tokenResults = this.searchTokenRegistry(query);
-            
             const allResults = [...portfolioResults, ...tokenResults];
             
             if (allResults.length > 0) {
@@ -1094,11 +1155,9 @@ class CypherApp {
         const searchResults = document.getElementById('searchResults');
         searchResults.style.display = 'none';
         
-        // Clear search input
         const searchInput = document.getElementById('globalSearch');
         if (searchInput) searchInput.value = '';
         
-        // Find token info
         const token = this.state.wallet.tokens.find(t => t.address === tokenAddress) ||
                      Object.entries(this.tokenRegistry).find(([addr, _]) => addr === tokenAddress);
         
@@ -1107,13 +1166,12 @@ class CypherApp {
             this.showToast(`Selected ${tokenInfo.symbol || tokenInfo.name}`, 'info');
         }
     }
-    
+
     // =================
-    // CHART INITIALIZATION (ENHANCED)
+    // CHART INITIALIZATION
     // =================
     
     initializeCharts() {
-        // Wait for DOM to be ready, then initialize charts
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => this.initCharts(), 100);
@@ -1261,22 +1319,19 @@ class CypherApp {
             `;
         }).join('');
     }
-    
+
     // =================
-    // EVENT LISTENERS (ENHANCED)
+    // EVENT LISTENERS
     // =================
     
     setupEventListeners() {
-        // Set up all event listeners for the application
         window.addEventListener('resize', () => this.handleResize());
         
-        // Connect wallet button
         const connectBtn = document.getElementById('connectWallet');
         if (connectBtn) {
             connectBtn.addEventListener('click', () => this.connectWallet());
         }
         
-        // Navigation tabs
         document.querySelectorAll('.nav-tab').forEach(tab => {
             tab.addEventListener('click', (e) => {
                 const sectionName = e.currentTarget.getAttribute('onclick')?.match(/switchSection\('(\w+)'\)/)?.[1];
@@ -1286,9 +1341,7 @@ class CypherApp {
             });
         });
 
-        // Global keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            // Ctrl/Cmd + R to refresh portfolio
             if ((e.ctrlKey || e.metaKey) && e.key === 'r' && this.state.wallet.connected) {
                 e.preventDefault();
                 this.refreshPortfolioData();
@@ -1298,14 +1351,13 @@ class CypherApp {
     }
     
     handleResize() {
-        // Handle responsive layout changes
         this.state.ui.charts.forEach(chart => {
             chart.resize();
         });
     }
-    
+
     // =================
-    // UTILITY FUNCTIONS (ENHANCED)
+    // UTILITY FUNCTIONS
     // =================
     
     showLoadingOverlay(message = 'Loading...') {
@@ -1339,7 +1391,6 @@ class CypherApp {
     showToast(message, type = 'info', duration = 3000) {
         const toast = document.getElementById('toast');
         if (!toast) {
-            // Create toast if it doesn't exist
             const toastEl = document.createElement('div');
             toastEl.id = 'toast';
             toastEl.className = 'toast';
@@ -1348,16 +1399,13 @@ class CypherApp {
         
         const toastElement = document.getElementById('toast');
         
-        // Set message and type
         toastElement.textContent = message;
         toastElement.className = `toast ${type} show`;
         
-        // Auto hide
         setTimeout(() => {
             toastElement.classList.remove('show');
         }, duration);
         
-        // Add to notifications state
         this.state.ui.notifications.push({
             id: Date.now(),
             message,
@@ -1373,14 +1421,23 @@ class CypherApp {
         const tooltip = document.createElement('div');
         tooltip.className = `tooltip tooltip-${position}`;
         tooltip.textContent = message;
+        tooltip.style.cssText = `
+            position: fixed;
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            z-index: 10000;
+            max-width: 200px;
+        `;
         
         document.body.appendChild(tooltip);
         
         const rect = element.getBoundingClientRect();
-        tooltip.style.left = `${rect.left + rect.width / 2}px`;
+        tooltip.style.left = `${rect.left + rect.width / 2 - tooltip.offsetWidth / 2}px`;
         tooltip.style.top = `${rect.bottom + 10}px`;
         
-        // Auto remove after 5 seconds
         setTimeout(() => {
             if (tooltip.parentNode) {
                 tooltip.parentNode.removeChild(tooltip);
@@ -1394,10 +1451,8 @@ class CypherApp {
     }
     
     trackEvent(eventName, properties = {}) {
-        // Analytics tracking - would integrate with real analytics service
         console.log('📊 Event:', eventName, properties);
         
-        // Store in local analytics
         const event = {
             name: eventName,
             properties,
@@ -1405,7 +1460,6 @@ class CypherApp {
             sessionId: this.getSessionId()
         };
         
-        // Add to analytics state
         if (!this.state.analytics.events) {
             this.state.analytics.events = [];
         }
@@ -1418,9 +1472,9 @@ class CypherApp {
         }
         return this.sessionId;
     }
-    
+
     // =================
-    // STATE MANAGEMENT (ENHANCED)
+    // STATE MANAGEMENT
     // =================
     
     async loadUserState() {
@@ -1443,12 +1497,7 @@ class CypherApp {
         }
     }
 
-    // =================
-    // CHECK EXISTING WALLET CONNECTION
-    // =================
-    
     async checkExistingWalletConnection() {
-        // Check if wallet is already connected
         if (window.phantom?.solana?.isConnected) {
             try {
                 const response = await window.phantom.solana.connect({ onlyIfTrusted: true });
@@ -1464,23 +1513,49 @@ class CypherApp {
             }
         }
     }
-    
+
     // =================
-    // PLACEHOLDER METHODS (ENHANCED)
+    // SECTION DATA LOADING
+    // =================
+    
+    async loadSectionData(sectionName) {
+        switch (sectionName) {
+            case 'portfolio':
+                if (this.state.wallet.connected) {
+                    await this.refreshPortfolioData();
+                }
+                break;
+            case 'analytics':
+                await this.loadAnalyticsData();
+                break;
+            case 'market':
+                await this.loadMarketData();
+                break;
+            case 'whale':
+                await this.loadWhaleData();
+                break;
+            case 'alerts':
+                this.renderAlerts();
+                break;
+            case 'social':
+                await this.loadSocialData();
+                break;
+        }
+    }
+
+    // =================
+    // PLACEHOLDER METHODS
     // =================
     
     initializeTooltips() {
-        // Tooltip system implementation
         console.log('Tooltips initialized');
     }
     
     setupResponsiveHandlers() {
-        // Responsive design handlers
         console.log('Responsive handlers setup');
     }
     
     initializeModals() {
-        // Modal management system
         console.log('Modals initialized');
     }
     
@@ -1572,6 +1647,10 @@ class APIManager {
     }
 }
 
+// =================
+// GLOBAL APP INSTANCE AND FUNCTIONS
+// =================
+
 // Global app instance
 const app = new CypherApp();
 
@@ -1583,13 +1662,10 @@ window.showHelp = () => app.showToast('Help system coming soon!', 'info');
 
 // Chart control functions
 window.changeChartTimeframe = (timeframe) => {
-    // Update chart timeframe
     const chart = app.state.ui.charts.get('portfolio');
     if (chart) {
-        // Update active button
         document.querySelectorAll('.chart-controls .btn').forEach(btn => btn.classList.remove('active'));
         event.target.classList.add('active');
-        
         app.showToast(`Chart updated to ${timeframe}`, 'info', 1500);
     }
 };

@@ -1,499 +1,21 @@
-    <!-- Progress Indicator for Loading -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <h3>Loading Cypher</h3>
-            <p id="loadingStatus">Initializing application...</p>
-        </div>
-    </div>
-
-    <!-- Additional CSS for modal components -->
-    <style>
-        .wallet-setup {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .wallet-option {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .wallet-option:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(102, 126, 234, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .wallet-option img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-        }
-
-        .wallet-icon {
-            width: 32px;
-            height: 32px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-        }
-
-        .wallet-option h4 {
-            color: #ffffff;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .wallet-option p {
-            color: #a3a3a3;
-            font-size: 0.875rem;
-            margin: 0;
-        }
-
-        .security-note {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 1rem;
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid rgba(16, 185, 129, 0.3);
-            border-radius: 12px;
-            color: #a3a3a3;
-            font-size: 0.875rem;
-        }
-
-        .security-note i {
-            color: #10b981;
-        }
-
-        .feature-tour {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .tour-item {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-        }
-
-        .tour-item i {
-            font-size: 2rem;
-            color: #667eea;
-            margin-bottom: 1rem;
-        }
-
-        .tour-item h4 {
-            color: #ffffff;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .tour-item p {
-            color: #a3a3a3;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-
-        .step-dots {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .dot.active {
-            background: #667eea;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            width: 32px;
-            height: 32px;
-            border: none;
-            background: rgba(255, 255, 255, 0.1);
-            color: #ffffff;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            transition: all 0.3s ease;
-        }
-
-        .close-btn:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
-
-        .help-tabs {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .help-tab {
-            padding: 0.75rem 1.5rem;
-            background: none;
-            border: none;
-            color: #a3a3a3;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .help-tab:hover {
-            color: #ffffff;
-        }
-
-        .help-tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
-
-        .help-tab-content {
-            display: none;
-        }
-
-        .help-tab-content.active {
-            display: block;
-        }
-
-        .help-tab-content h4 {
-            color: #ffffff;
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .help-tab-content h5 {
-            color: #ffffff;
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .help-tab-content p {
-            color: #a3a3a3;
-            line-height: 1.6;
-            margin-bottom: 1rem;
-        }
-
-        .help-tab-content ol {
-            color: #a3a3a3;
-            line-height: 1.6;
-            padding-left: 1.5rem;
-        }
-
-        .help-tab-content li {
-            margin-bottom: 0.5rem;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1.5rem;
-            margin-top: 1rem;
-        }
-
-        .feature-item {
-            text-align: center;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-        }
-
-        .feature-item i {
-            font-size: 2rem;
-            color: #667eea;
-            margin-bottom: 1rem;
-        }
-
-        .faq-item {
-            margin-bottom: 1.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .faq-item:last-child {
-            border-bottom: none;
-        }
-
-        .suggestions-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
-            background: #1a1a1a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
-
-        /* Additional responsive improvements */
-        @media (max-width: 768px) {
-            .wallet-setup {
-                gap: 0.75rem;
-            }
-            
-            .wallet-option {
-                padding: 0.75rem;
-            }
-            
-            .feature-tour {
-                grid-template-columns: 1fr;
-            }
-            
-            .help-tabs {
-                flex-wrap: wrap;
-            }
-            
-            .help-tab {
-                flex: 1;
-                min-width: 100px;
-            }
-        }
-    </style>
-
-    <!-- JavaScript Functions for Modal Operations -->
-    <script>
-        // Global modal functions
-        function openAlertModal() {
-            document.getElementById('alertModal').style.display = 'flex';
-        }
-
-        function closeAlertModal() {
-            document.getElementById('alertModal').style.display = 'none';
-        }
-
-        function openFollowModal() {
-            document.getElementById('followModal').style.display = 'flex';
-        }
-
-        function closeFollowModal() {
-            document.getElementById('followModal').style.display = 'none';
-        }
-
-        function showHelp() {
-            document.getElementById('helpModal').style.display = 'flex';
-        }
-
-        function closeHelpModal() {
-            document.getElementById('helpModal').style.display = 'none';
-        }
-
-        function createAlert(event) {
-            event.preventDefault();
-            const token = document.getElementById('tokenInput').value;
-            const alertType = document.getElementById('alertTypeSelect').value;
-            const price = document.getElementById('priceInput').value;
-            
-            // Show success message
-            if (window.app) {
-                window.app.showToast(`Alert created for ${token} (${alertType}): ${price}`, 'success');
-            } else {
-                alert(`Alert created for ${token} (${alertType}): ${price}`);
-            }
-            
-            closeAlertModal();
-        }
-
-        function followWallet(event) {
-            event.preventDefault();
-            const walletAddress = document.getElementById('walletInput').value;
-            const nickname = document.getElementById('nicknameInput').value || 'Unknown Wallet';
-            
-            // Show success message
-            if (window.app) {
-                window.app.showToast(`Now following wallet: ${nickname}`, 'success');
-            } else {
-                alert(`Now following wallet: ${nickname}`);
-            }
-            
-            closeFollowModal();
-        }
-
-        function updateAlertOptions() {
-            const alertType = document.getElementById('alertTypeSelect').value;
-            const alertOptions = document.getElementById('alertOptions');
-            
-            if (alertType === 'price') {
-                alertOptions.innerHTML = `
-                    <label>Target Price</label>
-                    <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
-                `;
-            } else if (alertType === 'volume') {
-                alertOptions.innerHTML = `
-                    <label>Volume Threshold</label>
-                    <input type="number" id="volumeInput" class="form-input" placeholder="Volume threshold" required>
-                `;
-            } else if (alertType === 'whale') {
-                alertOptions.innerHTML = `
-                    <label>Transaction Size (SOL)</label>
-                    <input type="number" id="whaleInput" class="form-input" placeholder="Minimum transaction size" required>
-                `;
-            }
-        }
-
-        function showHelpTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.help-tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.help-tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
-        }
-
-        // Additional helper functions for missing onclick handlers
-        function filterLeaderboard(period) {
-            if (window.app) {
-                window.app.showToast(`Leaderboard filtered by ${period}`, 'info');
-            }
-        }
-
-        function filterAchievements(filter) {
-            if (window.app) {
-                window.app.showToast(`Achievements filtered by ${filter}`, 'info');
-            }
-        }
-
-        function useAlertTemplate(type) {
-            document.getElementById('alertTypeSelect').value = type;
-            updateAlertOptions();
-            if (window.app) {
-                window.app.showToast(`Using ${type} alert template`, 'info');
-            }
-        }
-
-        function updateAlertForm() {
-            updateAlertOptions();
-        }
-
-        function setWhaleThreshold(amount) {
-            // Update active button
-            document.querySelectorAll('.threshold-buttons .btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            if (window.app) {
-                window.app.showToast(`Whale threshold set to ${amount} SOL`, 'info');
-            }
-        }
-
-        function setCustomThreshold() {
-            const customValue = document.getElementById('customThreshold').value;
-            if (customValue) {
-                if (window.app) {
-                    window.app.showToast(`Custom whale threshold set to ${customValue} SOL`, 'info');
-                }
-            }
-        }
-
-        // Close modals when clicking outside
-        document.addEventListener('click', function(event) {
-            const modals = ['welcomeModal', 'alertModal', 'followModal', 'helpModal'];
-            modals.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal && event.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-
-        // Initialize app when DOM is loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Cypher UI loaded successfully');
-            
-            // Add click listeners to navigation tabs to override onclick
-            document.querySelectorAll('.nav-tab').forEach(tab => {
-                tab.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const onclickAttr = this.getAttribute('onclick');
-                    if (onclickAttr && onclickAttr.includes('switchSection')) {
-                        const sectionMatch = onclickAttr.match(/switchSection\('(\w+)'\)/);
-                        if (sectionMatch && window.app) {
-                            window.app.switchSection(sectionMatch[1]);
-                        }
-                    }
-                });
-            });
-
-            // Add click listener to wallet button
-            const walletBtn = document.getElementById('connectWallet');
-            if (walletBtn) {
-                walletBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    if (window.app) {
-                        window.app.connectWallet();
-                    }
-                });
-            }
-
-            // Add click listener to help button
-            const helpBtn = document.getElementById('helpBtn');
-            if (helpBtn) {
-                helpBtn.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    showHelp();
-                });
-            }
-        });
-    </script>
-
-    <!-- Load the external JavaScript file -->
-    <script src="script.js"></script>
-</body>
-</html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cypher - Advanced Solana Portfolio Analytics</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
-    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    
+    <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Main Stylesheet -->
     <link rel="stylesheet" href="styles.css">
+    
+    <!-- Chart.js - Using a stable version that works with script tags -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Solana Web3.js - Using a stable version -->
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.87.6/lib/index.iife.min.js"></script>
 </head>
 <body>
     <!-- Main App Header -->
@@ -1102,3 +624,399 @@
                     <div class="stat-label">Community Rank</div>
                     <div class="stat-change" id="rankChange">...</div>
                 </div>
+                <div class="stat-card social">
+                    <div class="stat-icon"><i class="fas fa-medal"></i></div>
+                    <div class="stat-value" id="achievements">0</div>
+                    <div class="stat-label">Achievements</div>
+                    <div class="stat-change"><span>Unlocked</span></div>
+                </div>
+            </div>
+
+            <div class="social-grid">
+                <div class="card social-actions-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Quick Actions</h3>
+                    </div>
+                    <div class="social-actions">
+                        <button class="social-btn" onclick="sharePortfolio()">
+                            <i class="fas fa-share-alt"></i>
+                            <span>Share Portfolio</span>
+                        </button>
+                        <button class="social-btn" onclick="findTraders()">
+                            <i class="fas fa-search"></i>
+                            <span>Find Traders</span>
+                        </button>
+                        <button class="social-btn" onclick="joinCommunity()">
+                            <i class="fas fa-users"></i>
+                            <span>Join Community</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card leaderboard-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Leaderboard</h3>
+                        <div class="leaderboard-filters">
+                            <button class="btn btn-sm active" onclick="filterLeaderboard('weekly')">Weekly</button>
+                            <button class="btn btn-sm" onclick="filterLeaderboard('monthly')">Monthly</button>
+                            <button class="btn btn-sm" onclick="filterLeaderboard('all-time')">All Time</button>
+                        </div>
+                    </div>
+                    <div id="leaderboard" class="leaderboard-list">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+
+                <div class="card achievements-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Achievements</h3>
+                        <div class="achievement-filters">
+                            <button class="btn btn-sm active" onclick="filterAchievements('all')">All</button>
+                            <button class="btn btn-sm" onclick="filterAchievements('unlocked')">Unlocked</button>
+                            <button class="btn btn-sm" onclick="filterAchievements('locked')">Locked</button>
+                        </div>
+                    </div>
+                    <div id="achievements" class="achievements-list">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Progress Indicator for Loading -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Loading Cypher</h3>
+            <p id="loadingStatus">Initializing application...</p>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Modal for Alert Creation -->
+    <div id="alertModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeAlertModal()">&times;</button>
+            <div class="modal-header">
+                <h3>Create Price Alert</h3>
+            </div>
+            <form onsubmit="createAlert(event)">
+                <div class="form-group">
+                    <label>Token Symbol</label>
+                    <input type="text" id="tokenInput" class="form-input" placeholder="e.g., SOL, BONK" required>
+                </div>
+                <div class="form-group">
+                    <label>Alert Type</label>
+                    <select id="alertTypeSelect" class="form-select" onchange="updateAlertOptions()">
+                        <option value="price">Price Target</option>
+                        <option value="volume">Volume Spike</option>
+                        <option value="whale">Whale Movement</option>
+                    </select>
+                </div>
+                <div class="form-group" id="alertOptions">
+                    <label>Target Price</label>
+                    <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAlertModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Alert</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal for Following Wallets -->
+    <div id="followModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeFollowModal()">&times;</button>
+            <div class="modal-header">
+                <h3>Follow Wallet</h3>
+            </div>
+            <form onsubmit="followWallet(event)">
+                <div class="form-group">
+                    <label>Wallet Address</label>
+                    <input type="text" id="walletInput" class="form-input" placeholder="Enter Solana wallet address" required>
+                </div>
+                <div class="form-group">
+                    <label>Nickname (Optional)</label>
+                    <input type="text" id="nicknameInput" class="form-input" placeholder="Give this wallet a name">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeFollowModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Follow Wallet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeHelpModal()">&times;</button>
+            <div class="modal-header">
+                <h3>Help & Support</h3>
+            </div>
+            <div class="help-tabs">
+                <button class="help-tab active" onclick="showHelpTab('getting-started')">Getting Started</button>
+                <button class="help-tab" onclick="showHelpTab('features')">Features</button>
+                <button class="help-tab" onclick="showHelpTab('faq')">FAQ</button>
+            </div>
+            
+            <div id="getting-started" class="help-tab-content active">
+                <h4>Getting Started with Cypher</h4>
+                <h5>1. Connect Your Wallet</h5>
+                <p>Click the "Connect Wallet" button in the top right corner and select your preferred Solana wallet (Phantom, Solflare, or Backpack).</p>
+                
+                <h5>2. View Your Portfolio</h5>
+                <p>Once connected, your portfolio will automatically load showing your token holdings, values, and performance metrics.</p>
+                
+                <h5>3. Explore Features</h5>
+                <p>Navigate through different sections using the tabs below to access analytics, market data, whale tracking, alerts, and social features.</p>
+            </div>
+            
+            <div id="features" class="help-tab-content">
+                <h4>Platform Features</h4>
+                <div class="feature-grid">
+                    <div class="feature-item">
+                        <i class="fas fa-chart-pie"></i>
+                        <h5>Portfolio Tracking</h5>
+                        <p>Real-time portfolio valuation and performance analytics</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-brain"></i>
+                        <h5>Advanced Analytics</h5>
+                        <p>Deep insights into trading patterns and risk metrics</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-fish"></i>
+                        <h5>Whale Tracking</h5>
+                        <p>Monitor large transactions and follow successful traders</p>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-bell"></i>
+                        <h5>Smart Alerts</h5>
+                        <p>Custom price and volume alerts with notifications</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="faq" class="help-tab-content">
+                <h4>Frequently Asked Questions</h4>
+                <div class="faq-item">
+                    <h5>Is Cypher free to use?</h5>
+                    <p>Yes, Cypher is completely free to use. No subscriptions or hidden fees.</p>
+                </div>
+                <div class="faq-item">
+                    <h5>Which wallets are supported?</h5>
+                    <p>Cypher supports Phantom, Solflare, and Backpack wallets for Solana.</p>
+                </div>
+                <div class="faq-item">
+                    <h5>How often is data updated?</h5>
+                    <p>Portfolio and market data is updated in real-time, with price feeds refreshing every 30 seconds.</p>
+                </div>
+                <div class="faq-item">
+                    <h5>Is my wallet data secure?</h5>
+                    <p>Cypher only reads public blockchain data. We never access private keys or make transactions.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Functions for Modal Operations -->
+    <script>
+        // Global modal functions
+        function openAlertModal() {
+            document.getElementById('alertModal').style.display = 'flex';
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').style.display = 'none';
+        }
+
+        function openFollowModal() {
+            document.getElementById('followModal').style.display = 'flex';
+        }
+
+        function closeFollowModal() {
+            document.getElementById('followModal').style.display = 'none';
+        }
+
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'flex';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        function createAlert(event) {
+            event.preventDefault();
+            const token = document.getElementById('tokenInput').value;
+            const alertType = document.getElementById('alertTypeSelect').value;
+            const price = document.getElementById('priceInput').value;
+            
+            // Show success message
+            if (window.app) {
+                window.app.showToast(`Alert created for ${token} (${alertType}): ${price}`, 'success');
+            } else {
+                alert(`Alert created for ${token} (${alertType}): ${price}`);
+            }
+            
+            closeAlertModal();
+        }
+
+        function followWallet(event) {
+            event.preventDefault();
+            const walletAddress = document.getElementById('walletInput').value;
+            const nickname = document.getElementById('nicknameInput').value || 'Unknown Wallet';
+            
+            // Show success message
+            if (window.app) {
+                window.app.showToast(`Now following wallet: ${nickname}`, 'success');
+            } else {
+                alert(`Now following wallet: ${nickname}`);
+            }
+            
+            closeFollowModal();
+        }
+
+        function updateAlertOptions() {
+            const alertType = document.getElementById('alertTypeSelect').value;
+            const alertOptions = document.getElementById('alertOptions');
+            
+            if (alertType === 'price') {
+                alertOptions.innerHTML = `
+                    <label>Target Price</label>
+                    <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
+                `;
+            } else if (alertType === 'volume') {
+                alertOptions.innerHTML = `
+                    <label>Volume Threshold</label>
+                    <input type="number" id="volumeInput" class="form-input" placeholder="Volume threshold" required>
+                `;
+            } else if (alertType === 'whale') {
+                alertOptions.innerHTML = `
+                    <label>Transaction Size (SOL)</label>
+                    <input type="number" id="whaleInput" class="form-input" placeholder="Minimum transaction size" required>
+                `;
+            }
+        }
+
+        function showHelpTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.help-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.help-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Additional helper functions for missing onclick handlers
+        function filterLeaderboard(period) {
+            if (window.app) {
+                window.app.showToast(`Leaderboard filtered by ${period}`, 'info');
+            }
+        }
+
+        function filterAchievements(filter) {
+            if (window.app) {
+                window.app.showToast(`Achievements filtered by ${filter}`, 'info');
+            }
+        }
+
+        function useAlertTemplate(type) {
+            document.getElementById('alertTypeSelect').value = type;
+            updateAlertOptions();
+            if (window.app) {
+                window.app.showToast(`Using ${type} alert template`, 'info');
+            }
+        }
+
+        function updateAlertForm() {
+            updateAlertOptions();
+        }
+
+        function setWhaleThreshold(amount) {
+            // Update active button
+            document.querySelectorAll('.threshold-buttons .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (window.app) {
+                window.app.showToast(`Whale threshold set to ${amount} SOL`, 'info');
+            }
+        }
+
+        function setCustomThreshold() {
+            const customValue = document.getElementById('customThreshold').value;
+            if (customValue) {
+                if (window.app) {
+                    window.app.showToast(`Custom whale threshold set to ${customValue} SOL`, 'info');
+                }
+            }
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(event) {
+            const modals = ['welcomeModal', 'alertModal', 'followModal', 'helpModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Cypher UI loaded successfully');
+            
+            // Add click listeners to navigation tabs to override onclick
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const onclickAttr = this.getAttribute('onclick');
+                    if (onclickAttr && onclickAttr.includes('switchSection')) {
+                        const sectionMatch = onclickAttr.match(/switchSection\('(\w+)'\)/);
+                        if (sectionMatch && window.app) {
+                            window.app.switchSection(sectionMatch[1]);
+                        }
+                    }
+                });
+            });
+
+            // Add click listener to wallet button
+            const walletBtn = document.getElementById('connectWallet');
+            if (walletBtn) {
+                walletBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (window.app) {
+                        window.app.connectWallet();
+                    }
+                });
+            }
+
+            // Add click listener to help button
+            const helpBtn = document.getElementById('helpBtn');
+            if (helpBtn) {
+                helpBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showHelp();
+                });
+            }
+        });
+    </script>
+
+    <!-- Load the external JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html>
