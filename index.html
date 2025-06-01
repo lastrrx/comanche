@@ -1,4 +1,490 @@
-<!DOCTYPE html>
+    <!-- Progress Indicator for Loading -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Loading Cypher</h3>
+            <p id="loadingStatus">Initializing application...</p>
+        </div>
+    </div>
+
+    <!-- Additional CSS for modal components -->
+    <style>
+        .wallet-setup {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .wallet-option {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .wallet-option:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(102, 126, 234, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .wallet-option img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        .wallet-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .wallet-option h4 {
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .wallet-option p {
+            color: #a3a3a3;
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .security-note {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            color: #a3a3a3;
+            font-size: 0.875rem;
+        }
+
+        .security-note i {
+            color: #10b981;
+        }
+
+        .feature-tour {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .tour-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        .tour-item i {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .tour-item h4 {
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .tour-item p {
+            color: #a3a3a3;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .step-dots {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: #667eea;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .help-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .help-tab {
+            padding: 0.75rem 1.5rem;
+            background: none;
+            border: none;
+            color: #a3a3a3;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .help-tab:hover {
+            color: #ffffff;
+        }
+
+        .help-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .help-tab-content {
+            display: none;
+        }
+
+        .help-tab-content.active {
+            display: block;
+        }
+
+        .help-tab-content h4 {
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .help-tab-content h5 {
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .help-tab-content p {
+            color: #a3a3a3;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }
+
+        .help-tab-content ol {
+            color: #a3a3a3;
+            line-height: 1.6;
+            padding-left: 1.5rem;
+        }
+
+        .help-tab-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .feature-item {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+        }
+
+        .feature-item i {
+            font-size: 2rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .faq-item {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestions-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1a1a1a;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Additional responsive improvements */
+        @media (max-width: 768px) {
+            .wallet-setup {
+                gap: 0.75rem;
+            }
+            
+            .wallet-option {
+                padding: 0.75rem;
+            }
+            
+            .feature-tour {
+                grid-template-columns: 1fr;
+            }
+            
+            .help-tabs {
+                flex-wrap: wrap;
+            }
+            
+            .help-tab {
+                flex: 1;
+                min-width: 100px;
+            }
+        }
+    </style>
+
+    <!-- JavaScript Functions for Modal Operations -->
+    <script>
+        // Global modal functions
+        function openAlertModal() {
+            document.getElementById('alertModal').style.display = 'flex';
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alertModal').style.display = 'none';
+        }
+
+        function openFollowModal() {
+            document.getElementById('followModal').style.display = 'flex';
+        }
+
+        function closeFollowModal() {
+            document.getElementById('followModal').style.display = 'none';
+        }
+
+        function showHelp() {
+            document.getElementById('helpModal').style.display = 'flex';
+        }
+
+        function closeHelpModal() {
+            document.getElementById('helpModal').style.display = 'none';
+        }
+
+        function createAlert(event) {
+            event.preventDefault();
+            const token = document.getElementById('tokenInput').value;
+            const alertType = document.getElementById('alertTypeSelect').value;
+            const price = document.getElementById('priceInput').value;
+            
+            // Show success message
+            if (window.app) {
+                window.app.showToast(`Alert created for ${token} (${alertType}): ${price}`, 'success');
+            } else {
+                alert(`Alert created for ${token} (${alertType}): ${price}`);
+            }
+            
+            closeAlertModal();
+        }
+
+        function followWallet(event) {
+            event.preventDefault();
+            const walletAddress = document.getElementById('walletInput').value;
+            const nickname = document.getElementById('nicknameInput').value || 'Unknown Wallet';
+            
+            // Show success message
+            if (window.app) {
+                window.app.showToast(`Now following wallet: ${nickname}`, 'success');
+            } else {
+                alert(`Now following wallet: ${nickname}`);
+            }
+            
+            closeFollowModal();
+        }
+
+        function updateAlertOptions() {
+            const alertType = document.getElementById('alertTypeSelect').value;
+            const alertOptions = document.getElementById('alertOptions');
+            
+            if (alertType === 'price') {
+                alertOptions.innerHTML = `
+                    <label>Target Price</label>
+                    <input type="number" id="priceInput" class="form-input" placeholder="Target price" step="0.000001" required>
+                `;
+            } else if (alertType === 'volume') {
+                alertOptions.innerHTML = `
+                    <label>Volume Threshold</label>
+                    <input type="number" id="volumeInput" class="form-input" placeholder="Volume threshold" required>
+                `;
+            } else if (alertType === 'whale') {
+                alertOptions.innerHTML = `
+                    <label>Transaction Size (SOL)</label>
+                    <input type="number" id="whaleInput" class="form-input" placeholder="Minimum transaction size" required>
+                `;
+            }
+        }
+
+        function showHelpTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.help-tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.help-tab').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Additional helper functions for missing onclick handlers
+        function filterLeaderboard(period) {
+            if (window.app) {
+                window.app.showToast(`Leaderboard filtered by ${period}`, 'info');
+            }
+        }
+
+        function filterAchievements(filter) {
+            if (window.app) {
+                window.app.showToast(`Achievements filtered by ${filter}`, 'info');
+            }
+        }
+
+        function useAlertTemplate(type) {
+            document.getElementById('alertTypeSelect').value = type;
+            updateAlertOptions();
+            if (window.app) {
+                window.app.showToast(`Using ${type} alert template`, 'info');
+            }
+        }
+
+        function updateAlertForm() {
+            updateAlertOptions();
+        }
+
+        function setWhaleThreshold(amount) {
+            // Update active button
+            document.querySelectorAll('.threshold-buttons .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            if (window.app) {
+                window.app.showToast(`Whale threshold set to ${amount} SOL`, 'info');
+            }
+        }
+
+        function setCustomThreshold() {
+            const customValue = document.getElementById('customThreshold').value;
+            if (customValue) {
+                if (window.app) {
+                    window.app.showToast(`Custom whale threshold set to ${customValue} SOL`, 'info');
+                }
+            }
+        }
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function(event) {
+            const modals = ['welcomeModal', 'alertModal', 'followModal', 'helpModal'];
+            modals.forEach(modalId => {
+                const modal = document.getElementById(modalId);
+                if (modal && event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // Initialize app when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Cypher UI loaded successfully');
+            
+            // Add click listeners to navigation tabs to override onclick
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const onclickAttr = this.getAttribute('onclick');
+                    if (onclickAttr && onclickAttr.includes('switchSection')) {
+                        const sectionMatch = onclickAttr.match(/switchSection\('(\w+)'\)/);
+                        if (sectionMatch && window.app) {
+                            window.app.switchSection(sectionMatch[1]);
+                        }
+                    }
+                });
+            });
+
+            // Add click listener to wallet button
+            const walletBtn = document.getElementById('connectWallet');
+            if (walletBtn) {
+                walletBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (window.app) {
+                        window.app.connectWallet();
+                    }
+                });
+            }
+
+            // Add click listener to help button
+            const helpBtn = document.getElementById('helpBtn');
+            if (helpBtn) {
+                helpBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showHelp();
+                });
+            }
+        });
+    </script>
+
+    <!-- Load the external JavaScript file -->
+    <script src="script.js"></script>
+</body>
+</html><!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
