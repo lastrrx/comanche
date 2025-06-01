@@ -1,24 +1,833 @@
-                    <div class="token-amount" style="text-align: right; margin-right: 1rem;">
-                        <div style="font-weight: 600; color: #ffffff;">${token.amount.toLocaleString(undefined, {maximumFractionDigits: 6})}</div>
-                        <div style="color: #a3a3a3; font-size: 0.875rem;">${token.price.toFixed(4)}</div>
-                    </div>
-                    <div class="token-value" style="text-align: right; margin-right: 1rem;">
-                        <div style="font-weight: 600; color: #ffffff;">${token.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                        <div class="${changeClass}" style="font-size: 0.875rem;">
-                            <i class="fas ${changeIcon}"></i> ${Math.abs(token.change24h).toFixed(2)}%
-                        </div>
+// Enhanced Cypher Portfolio Analytics - v3.3
+// Cleaned version with duplicate code removed and syntax errors fixed
+
+class CypherApp {
+    constructor() {
+        this.state = {
+            initialized: false,
+            loading: false,
+            currentSection: 'portfolio',
+            
+            user: {
+                isFirstTime: true,
+                preferences: {},
+                onboardingCompleted: false
+            },
+            wallet: {
+                connected: false,
+                publicKey: null,
+                balance: 0,
+                tokens: [],
+                transactions: [],
+                performance: {
+                    totalValue: 0,
+                    dayChange: 0,
+                    dayChangePercent: 0,
+                    totalGain: 0,
+                    totalGainPercent: 0
+                }
+            },
+            
+            market: {
+                solPrice: 0,
+                marketCap: 0,
+                volume24h: 0,
+                priceChange24h: 0,
+                sentiment: 'neutral',
+                trending: [],
+                gainers: [],
+                losers: []
+            },
+            
+            social: {
+                followedWallets: new Map(),
+                whaleMovements: [],
+                leaderboard: [],
+                achievements: new Map(),
+                userRank: null
+            },
+            
+            alerts: {
+                active: [],
+                history: [],
+                settings: {
+                    browserNotifications: true,
+                    emailNotifications: false,
+                    pushNotifications: false
+                }
+            },
+            
+            analytics: {
+                portfolioHistory: [],
+                tradingPatterns: {},
+                riskMetrics: {},
+                benchmarkComparison: {}
+            },
+            
+            ui: {
+                charts: new Map(),
+                modals: new Set(),
+                notifications: [],
+                searchResults: []
+            }
+        };
+        
+        // Working RPC endpoints for 2025
+        this.rpcEndpoints = [
+            'https://solana-mainnet.rpc.extrnode.com',
+            'https://rpc.hellomoon.io',
+            'https://solana.blockpi.network/v1/rpc/public',
+            'https://solana-mainnet.phantom.tech',
+            'https://ssc-dao.genesysgo.net'
+        ];
+        
+        this.solana = {
+            connection: null,
+            currentEndpoint: 0,
+            useApiOnly: false
+        };
+
+        this.cache = new DataCache();
+        this.apiManager = new APIManager();
+
+        this.tokenRegistry = {
+            'So11111111111111111111111111111111111111112': { 
+                symbol: 'SOL', 
+                name: 'Solana', 
+                decimals: 9,
+                coingeckoId: 'solana'
+            },
+            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { 
+                symbol: 'USDC', 
+                name: 'USD Coin', 
+                decimals: 6,
+                coingeckoId: 'usd-coin'
+            },
+            'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { 
+                symbol: 'BONK', 
+                name: 'Bonk', 
+                decimals: 5,
+                coingeckoId: 'bonk'
+            },
+            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { 
+                symbol: 'USDT', 
+                name: 'Tether USD', 
+                decimals: 6,
+                coingeckoId: 'tether'
+            },
+            'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So': {
+                symbol: 'mSOL',
+                name: 'Marinade SOL',
+                decimals: 9,
+                coingeckoId: 'marinade-staked-sol'
+            },
+            'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn': {
+                symbol: 'JitoSOL',
+                name: 'Jito Staked SOL',
+                decimals: 9,
+                coingeckoId: 'jito-staked-sol'
+            }
+        };
+        
+        this.init();
+    }
+    
+    // INITIALIZATION METHODS
+    async init() {
+        try {
+            this.showLoadingOverlay('Initializing Cypher...');
+            
+            await this.loadUserState();
+            await this.initSolanaConnectionSafely();
+            this.setupEventListeners();
+            this.initializeUI();
+            await this.loadInitialMarketData();
+            await this.checkExistingWalletConnection();
+            
+            if (this.state.user.isFirstTime && !this.state.wallet.connected) {
+                setTimeout(() => this.showOnboarding(), 1000);
+            }
+            
+            this.state.initialized = true;
+            this.hideLoadingOverlay();
+            this.startRealTimeUpdates();
+            
+            console.log('🚀 Cypher initialized successfully');
+            
+        } catch (error) {
+            console.error('❌ Failed to initialize Cypher:', error);
+            this.showError('Failed to initialize application. Please refresh the page.');
+            this.hideLoadingOverlay();
+        }
+    }
+
+    async initSolanaConnectionSafely() {
+        this.updateLoadingStatus('Connecting to Solana network...');
+        
+        if (typeof solanaWeb3 === 'undefined') {
+            console.error('❌ Solana Web3.js not loaded - using API-only mode');
+            this.solana.useApiOnly = true;
+            return;
+        }
+
+        for (let i = 0; i < this.rpcEndpoints.length; i++) {
+            try {
+                console.log(`🔄 Testing RPC: ${this.rpcEndpoints[i]}`);
+                
+                const connection = new solanaWeb3.Connection(
+                    this.rpcEndpoints[i], 
+                    'confirmed'
+                );
+                
+                const testPromise = connection.getLatestBlockhash();
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error('Timeout')), 3000)
+                );
+                
+                await Promise.race([testPromise, timeoutPromise]);
+                
+                this.solana.connection = connection;
+                this.solana.currentEndpoint = i;
+                console.log(`✅ Connected to: ${this.rpcEndpoints[i]}`);
+                this.showToast('Blockchain connection established', 'success', 2000);
+                return;
+                
+            } catch (error) {
+                console.warn(`❌ RPC ${this.rpcEndpoints[i]} failed: ${error.message}`);
+                continue;
+            }
+        }
+        
+        console.warn('❌ All RPC endpoints failed - switching to API-only mode');
+        this.solana.connection = null;
+        this.solana.useApiOnly = true;
+        this.showToast('Using market data only (RPC unavailable)', 'warning', 3000);
+    }
+
+    // WALLET CONNECTION METHODS
+    async connectWallet(walletType = 'auto') {
+        try {
+            console.log('🔗 Attempting wallet connection...');
+            this.showLoadingOverlay('Connecting wallet...');
+            
+            const walletAdapter = this.getWalletAdapter(walletType);
+            
+            if (!walletAdapter) {
+                this.hideLoadingOverlay();
+                this.showWalletInstallationHelp(walletType === 'auto' ? 'phantom' : walletType);
+                return false;
+            }
+            
+            this.updateLoadingStatus('Requesting wallet connection...');
+            
+            const response = await walletAdapter.connect({ onlyIfTrusted: false });
+            
+            if (response.publicKey) {
+                this.state.wallet.connected = true;
+                this.state.wallet.publicKey = response.publicKey.toString();
+                
+                this.updateLoadingStatus('Loading wallet data...');
+                
+                await this.loadRealWalletData();
+                this.updateWalletUI();
+                await this.checkAchievements();
+                
+                this.hideLoadingOverlay();
+                this.showToast('Wallet connected successfully! 🎉', 'success');
+                this.trackEvent('wallet_connected', { wallet_type: walletType });
+                
+                return true;
+            }
+            
+        } catch (error) {
+            console.error('Wallet connection error:', error);
+            this.hideLoadingOverlay();
+            this.handleWalletConnectionError(error, walletType);
+            return false;
+        }
+    }
+
+    getWalletAdapter(walletType) {
+        if (walletType === 'auto' || walletType === 'phantom') {
+            const phantom = this.getPhantomWallet();
+            if (phantom) return phantom;
+            if (walletType === 'auto') {
+                return this.getSolflareWallet() || this.getBackpackWallet();
+            }
+        } else if (walletType === 'solflare') {
+            return this.getSolflareWallet();
+        } else if (walletType === 'backpack') {
+            return this.getBackpackWallet();
+        }
+        return null;
+    }
+    
+    getPhantomWallet() {
+        if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
+        if (window.solana?.isPhantom) return window.solana;
+        return null;
+    }
+    
+    getSolflareWallet() {
+        if (window.solflare?.isSolflare) return window.solflare;
+        return null;
+    }
+    
+    getBackpackWallet() {
+        if (window.backpack?.isBackpack) return window.backpack;
+        return null;
+    }
+
+    handleWalletConnectionError(error, walletType) {
+        if (error.code === 4001 || error.message?.includes('User rejected')) {
+            this.showToast('Connection cancelled by user', 'warning');
+        } else if (error.code === -32002) {
+            this.showToast('Connection request pending. Please check your wallet.', 'info');
+        } else {
+            this.showToast(`Connection failed: ${error.message}`, 'error');
+            if (error.message.includes('not found')) {
+                this.showWalletInstallationHelp(walletType);
+            }
+        }
+    }
+    
+    showWalletInstallationHelp(walletType) {
+        const walletUrls = {
+            phantom: 'https://phantom.app/',
+            solflare: 'https://solflare.com/',
+            backpack: 'https://backpack.app/'
+        };
+        
+        const url = walletUrls[walletType];
+        if (url) {
+            const shouldOpen = confirm(`${walletType.charAt(0).toUpperCase() + walletType.slice(1)} wallet not found. Would you like to install it?`);
+            if (shouldOpen) {
+                window.open(url, '_blank');
+            }
+        }
+    }
+
+    async checkExistingWalletConnection() {
+        if (window.phantom?.solana?.isConnected) {
+            try {
+                const response = await window.phantom.solana.connect({ onlyIfTrusted: true });
+                if (response.publicKey) {
+                    this.state.wallet.connected = true;
+                    this.state.wallet.publicKey = response.publicKey.toString();
+                    await this.loadRealWalletData();
+                    this.updateWalletUI();
+                    this.showToast('Wallet auto-connected!', 'success');
+                }
+            } catch (error) {
+                console.log('No trusted connection found');
+            }
+        }
+    }
+
+    // DATA LOADING METHODS
+    async loadRealWalletData() {
+        if (!this.state.wallet.connected) {
+            console.log('❌ Wallet not connected');
+            return;
+        }
+
+        if (!this.solana.connection || this.solana.useApiOnly) {
+            console.log('📡 No RPC connection - using enhanced demo data');
+            this.showToast('Wallet connected! RPC unavailable - showing demo portfolio with live prices.', 'info', 4000);
+            await this.loadEnhancedDemoData();
+            return;
+        }
+
+        try {
+            this.updateLoadingStatus('Loading wallet data...');
+            
+            const publicKey = new solanaWeb3.PublicKey(this.state.wallet.publicKey);
+            const solBalance = await this.getSolBalanceWithRetry(publicKey);
+            const tokenAccounts = await this.getTokenAccountsWithRetry(publicKey);
+            const processedTokens = await this.processTokenAccounts(tokenAccounts, solBalance);
+            
+            this.state.wallet.balance = solBalance;
+            this.state.wallet.tokens = processedTokens.tokens;
+            this.state.wallet.performance = processedTokens.performance;
+            
+            this.updateWalletUI();
+            this.updatePortfolioCharts();
+            
+            console.log('✅ Real wallet data loaded successfully');
+            this.showToast('Portfolio loaded with live blockchain data!', 'success');
+            
+        } catch (error) {
+            console.error('❌ Error loading wallet data:', error);
+            this.showToast('Blockchain error - using demo data with live prices', 'warning');
+            await this.loadEnhancedDemoData();
+        }
+    }
+
+    async loadEnhancedDemoData() {
+        try {
+            const marketData = await this.fetchMarketDataFromCoinGecko();
+            const solPrice = marketData?.solPrice || 98.50;
+            
+            this.state.wallet.balance = 12.5;
+            this.state.wallet.tokens = [
+                {
+                    address: 'So11111111111111111111111111111111111111112',
+                    symbol: 'SOL',
+                    name: 'Solana',
+                    amount: 12.5,
+                    price: solPrice,
+                    value: 12.5 * solPrice,
+                    change24h: marketData?.priceChange24h || 3.2,
+                    isNative: true
+                },
+                {
+                    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                    symbol: 'USDC',
+                    name: 'USD Coin',
+                    amount: 450.0,
+                    price: 1.0,
+                    value: 450.0,
+                    change24h: 0.1,
+                    isNative: false
+                },
+                {
+                    address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
+                    symbol: 'mSOL',
+                    name: 'Marinade SOL',
+                    amount: 5.8,
+                    price: solPrice * 1.05,
+                    value: 5.8 * solPrice * 1.05,
+                    change24h: 2.8,
+                    isNative: false
+                }
+            ];
+            
+            await this.updateDemoTokenPrices();
+            
+            const totalValue = this.state.wallet.tokens.reduce((sum, token) => sum + token.value, 0);
+            this.state.wallet.performance.totalValue = totalValue;
+            this.state.wallet.performance.dayChange = totalValue * 0.032;
+            this.state.wallet.performance.dayChangePercent = 3.2;
+
+            this.updateWalletUI();
+            this.updatePortfolioCharts();
+            
+        } catch (error) {
+            console.error('Failed to load enhanced demo data:', error);
+            this.loadBasicMockData();
+        }
+    }
+
+    async updateDemoTokenPrices() {
+        try {
+            const response = await fetch(
+                'https://api.coingecko.com/api/v3/simple/price?ids=solana,usd-coin,marinade-staked-sol&vs_currencies=usd&include_24hr_change=true'
+            );
+            
+            if (response.ok) {
+                const prices = await response.json();
+                this.updateTokenPricesFromAPI(prices);
+            }
+        } catch (error) {
+            console.warn('Failed to update demo token prices:', error);
+        }
+    }
+
+    updateTokenPricesFromAPI(prices) {
+        if (prices.solana) {
+            const solToken = this.state.wallet.tokens.find(t => t.symbol === 'SOL');
+            if (solToken) {
+                solToken.price = prices.solana.usd;
+                solToken.value = solToken.amount * prices.solana.usd;
+                solToken.change24h = prices.solana.usd_24h_change || 0;
+            }
+        }
+        
+        if (prices['marinade-staked-sol']) {
+            const msolToken = this.state.wallet.tokens.find(t => t.symbol === 'mSOL');
+            if (msolToken) {
+                msolToken.price = prices['marinade-staked-sol'].usd;
+                msolToken.value = msolToken.amount * prices['marinade-staked-sol'].usd;
+                msolToken.change24h = prices['marinade-staked-sol'].usd_24h_change || 0;
+            }
+        }
+    }
+
+    loadBasicMockData() {
+        this.state.wallet.balance = 12.5;
+        this.state.wallet.tokens = [
+            {
+                address: 'So11111111111111111111111111111111111111112',
+                symbol: 'SOL',
+                name: 'Solana',
+                amount: 12.5,
+                price: 98.50,
+                value: 1231.25,
+                change24h: 3.2,
+                isNative: true
+            },
+            {
+                address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
+                symbol: 'USDC',
+                name: 'USD Coin',
+                amount: 450.0,
+                price: 1.0,
+                value: 450.0,
+                change24h: 0.1,
+                isNative: false
+            }
+        ];
+        
+        this.state.wallet.performance.totalValue = 1681.25;
+        this.state.wallet.performance.dayChange = 53.8;
+        this.state.wallet.performance.dayChangePercent = 3.2;
+
+        this.updateWalletUI();
+        this.updatePortfolioCharts();
+    }
+
+    // BLOCKCHAIN DATA METHODS
+    async getSolBalanceWithRetry(publicKey, maxRetries = 2) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const balance = await this.solana.connection.getBalance(publicKey);
+                return balance / solanaWeb3.LAMPORTS_PER_SOL;
+            } catch (error) {
+                console.warn(`SOL balance fetch attempt ${i + 1} failed:`, error);
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    async getTokenAccountsWithRetry(publicKey, maxRetries = 2) {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                const accounts = await this.solana.connection.getParsedTokenAccountsByOwner(
+                    publicKey,
+                    { 
+                        programId: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') 
+                    }
+                );
+                
+                return accounts.value.filter(account => {
+                    const amount = account.account.data.parsed.info.tokenAmount.uiAmount;
+                    return amount && amount > 0;
+                });
+                
+            } catch (error) {
+                console.warn(`Token accounts fetch attempt ${i + 1} failed:`, error);
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+    }
+
+    async processTokenAccounts(tokenAccounts, solBalance) {
+        const tokens = [];
+        
+        const solPrice = this.state.market.solPrice || 0;
+        const solValue = solBalance * solPrice;
+        let totalValue = solValue;
+        
+        tokens.push({
+            address: 'So11111111111111111111111111111111111111112',
+            symbol: 'SOL',
+            name: 'Solana',
+            amount: solBalance,
+            price: solPrice,
+            value: solValue,
+            change24h: this.state.market.priceChange24h || 0,
+            isNative: true
+        });
+
+        const tokenList = this.buildTokenList(tokenAccounts);
+        
+        if (tokenList.length > 0) {
+            try {
+                const prices = await this.fetchTokenPricesFromCoinGecko(tokenList);
+                this.updateTokenListPrices(tokenList, prices);
+                totalValue += tokenList.reduce((sum, token) => sum + token.value, 0);
+            } catch (error) {
+                console.warn('Failed to fetch token prices:', error);
+            }
+        }
+
+        tokens.push(...tokenList);
+        tokens.sort((a, b) => b.value - a.value);
+
+        return {
+            tokens,
+            performance: this.calculatePerformance(totalValue)
+        };
+    }
+
+    buildTokenList(tokenAccounts) {
+        const tokenList = [];
+        tokenAccounts.forEach(account => {
+            const tokenInfo = account.account.data.parsed.info;
+            const mint = tokenInfo.mint;
+            const amount = tokenInfo.tokenAmount.uiAmount;
+            
+            const tokenMeta = this.tokenRegistry[mint] || {
+                symbol: mint.slice(0, 4) + '...',
+                name: 'Unknown Token',
+                decimals: tokenInfo.tokenAmount.decimals,
+                coingeckoId: null
+            };
+
+            tokenList.push({
+                address: mint,
+                symbol: tokenMeta.symbol,
+                name: tokenMeta.name,
+                amount: amount,
+                price: 0,
+                value: 0,
+                change24h: 0,
+                isNative: false,
+                coingeckoId: tokenMeta.coingeckoId
+            });
+        });
+        return tokenList;
+    }
+
+    updateTokenListPrices(tokenList, prices) {
+        tokenList.forEach(token => {
+            if (token.coingeckoId && prices[token.coingeckoId]) {
+                const priceData = prices[token.coingeckoId];
+                token.price = priceData.usd || 0;
+                token.change24h = priceData.usd_24h_change || 0;
+                token.value = token.amount * token.price;
+            }
+        });
+    }
+
+    calculatePerformance(totalValue) {
+        const previousValue = this.state.wallet.performance.totalValue || totalValue;
+        const dayChange = totalValue - previousValue;
+        const dayChangePercent = previousValue > 0 ? (dayChange / previousValue) * 100 : 0;
+
+        return {
+            totalValue,
+            dayChange,
+            dayChangePercent,
+            totalGain: 0,
+            totalGainPercent: 0
+        };
+    }
+
+    // MARKET DATA METHODS
+    async loadInitialMarketData() {
+        try {
+            this.updateLoadingStatus('Loading market data...');
+            
+            const marketData = await this.fetchMarketDataFromCoinGecko();
+            
+            if (marketData) {
+                this.state.market = { ...this.state.market, ...marketData };
+                this.updateMarketUI();
+                console.log('✅ Market data loaded successfully');
+            } else {
+                throw new Error('Failed to fetch market data');
+            }
+            
+        } catch (error) {
+            console.error('❌ Failed to load market data:', error);
+            this.loadMockMarketData();
+        }
+    }
+
+    async fetchMarketDataFromCoinGecko() {
+        try {
+            const response = await fetch(
+                'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true',
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(`CoinGecko API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            const solData = data.solana;
+
+            if (!solData) {
+                throw new Error('Invalid CoinGecko response');
+            }
+
+            return {
+                solPrice: solData.usd || 0,
+                marketCap: solData.usd_market_cap || 0,
+                volume24h: solData.usd_24h_vol || 0,
+                priceChange24h: solData.usd_24h_change || 0
+            };
+
+        } catch (error) {
+            console.error('CoinGecko API failed:', error);
+            return null;
+        }
+    }
+
+    async fetchTokenPricesFromCoinGecko(tokens) {
+        try {
+            const geckoIds = tokens.map(token => {
+                const tokenInfo = this.tokenRegistry[token.address];
+                return tokenInfo?.coingeckoId;
+            }).filter(Boolean);
+
+            if (geckoIds.length === 0) {
+                return {};
+            }
+
+            const response = await fetch(
+                `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true`
+            );
+
+            if (!response.ok) {
+                throw new Error(`CoinGecko price API error: ${response.status}`);
+            }
+
+            return await response.json();
+
+        } catch (error) {
+            console.error('Token price fetch failed:', error);
+            return {};
+        }
+    }
+
+    loadMockMarketData() {
+        this.state.market = {
+            solPrice: 98.50,
+            marketCap: 42000000000,
+            volume24h: 1200000000,
+            priceChange24h: 3.4,
+            sentiment: 'bullish',
+            trending: [],
+            gainers: [],
+            losers: []
+        };
+        
+        this.updateMarketUI();
+    }
+
+    // UI UPDATE METHODS
+    updateWalletUI() {
+        const connectBtn = document.getElementById('connectWallet');
+        if (connectBtn && this.state.wallet.connected) {
+            connectBtn.innerHTML = `
+                <i class="fas fa-check-circle"></i> 
+                <span>${this.state.wallet.publicKey.slice(0, 4)}...${this.state.wallet.publicKey.slice(-4)}</span>
+            `;
+            connectBtn.classList.add('connected');
+        }
+        
+        this.updatePortfolioStats();
+        this.updateHoldingsList();
+    }
+
+    updatePortfolioStats() {
+        const performance = this.state.wallet.performance;
+        
+        this.updateElement('totalValue', `$${performance.totalValue.toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        })}`);
+        
+        this.updateElement('tokenCount', this.state.wallet.tokens.length);
+
+        const portfolioGainEl = document.getElementById('portfolioGain');
+        const gainAmountEl = document.getElementById('gainAmount');
+        if (portfolioGainEl && gainAmountEl) {
+            const isPositive = performance.dayChangePercent >= 0;
+            portfolioGainEl.textContent = `${isPositive ? '+' : ''}${performance.dayChangePercent.toFixed(2)}%`;
+            portfolioGainEl.className = `stat-value ${isPositive ? 'positive' : 'negative'}`;
+            
+            gainAmountEl.textContent = `${isPositive ? '+' : ''}$${Math.abs(performance.dayChange).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+            gainAmountEl.className = `stat-change ${isPositive ? 'positive' : 'negative'}`;
+        }
+
+        this.updateElement('centerValue', `$${Math.round(performance.totalValue).toLocaleString()}`);
+
+        const totalChangeEl = document.getElementById('totalChange');
+        if (totalChangeEl && this.state.wallet.connected) {
+            const isPositive = performance.dayChangePercent >= 0;
+            totalChangeEl.innerHTML = `<span class="${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${performance.dayChangePercent.toFixed(2)}% today</span>`;
+        }
+    }
+
+    updateElement(id, content) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = content;
+        }
+    }
+
+    updateHoldingsList() {
+        const tokenListEl = document.getElementById('tokenList');
+        if (!tokenListEl) return;
+
+        if (this.state.wallet.tokens.length === 0) {
+            tokenListEl.innerHTML = this.getEmptyStateHTML();
+            return;
+        }
+
+        tokenListEl.innerHTML = this.state.wallet.tokens.map(token => this.getTokenItemHTML(token)).join('');
+    }
+
+    getEmptyStateHTML() {
+        return `
+            <div class="empty-state">
+                <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
+                <h4>No Holdings Found</h4>
+                <p>Your portfolio appears to be empty or we couldn't load your token data.</p>
+                <button class="btn btn-primary" onclick="refreshPortfolio()">
+                    <i class="fas fa-refresh"></i> Refresh Portfolio
+                </button>
+            </div>
+        `;
+    }
+
+    getTokenItemHTML(token) {
+        const isPositive = token.change24h >= 0;
+        const changeClass = isPositive ? 'positive' : 'negative';
+        const changeIcon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        return `
+            <div class="token-item" style="display: flex; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                <div class="token-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; margin-right: 1rem;">
+                    ${token.symbol.charAt(0)}
+                </div>
+                <div class="token-info" style="flex: 1;">
+                    <div class="token-symbol" style="font-weight: 600; color: #ffffff; font-size: 1rem;">${token.symbol}</div>
+                    <div class="token-name" style="color: #a3a3a3; font-size: 0.875rem;">${token.name}</div>
+                </div>
+                <div class="token-amount" style="text-align: right; margin-right: 1rem;">
+                    <div style="font-weight: 600; color: #ffffff;">${token.amount.toLocaleString(undefined, {maximumFractionDigits: 6})}</div>
+                    <div style="color: #a3a3a3; font-size: 0.875rem;">${token.price.toFixed(4)}</div>
+                </div>
+                <div class="token-value" style="text-align: right; margin-right: 1rem;">
+                    <div style="font-weight: 600; color: #ffffff;">${token.value.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    <div class="${changeClass}" style="font-size: 0.875rem;">
+                        <i class="fas ${changeIcon}"></i> ${Math.abs(token.change24h).toFixed(2)}%
                     </div>
                 </div>
-            `;
-        }).join('');
+            </div>
+        `;
     }
 
     updateMarketUI() {
-        const solPriceEl = document.getElementById('solPrice');
+        this.updateElement('solPrice', `${this.state.market.solPrice.toFixed(2)}`);
+        
         const solChangeEl = document.getElementById('solChange');
-        if (solPriceEl && solChangeEl) {
-            solPriceEl.textContent = `${this.state.market.solPrice.toFixed(2)}`;
-            
+        if (solChangeEl) {
             const change = this.state.market.priceChange24h || 0;
             const isPositive = change >= 0;
             solChangeEl.innerHTML = `<span class="${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${change.toFixed(2)}%</span>`;
@@ -38,6 +847,7 @@
         return num.toFixed(0);
     }
 
+    // REAL-TIME UPDATE METHODS
     startRealTimeUpdates() {
         setInterval(() => {
             this.updateMarketData();
@@ -60,22 +870,26 @@
                 this.updateMarketUI();
                 
                 if (this.state.wallet.connected && this.state.wallet.tokens.length > 0) {
-                    const solToken = this.state.wallet.tokens.find(t => t.symbol === 'SOL');
-                    if (solToken) {
-                        solToken.price = marketData.solPrice;
-                        solToken.value = solToken.amount * marketData.solPrice;
-                        solToken.change24h = marketData.priceChange24h;
-                        
-                        const totalValue = this.state.wallet.tokens.reduce((sum, token) => sum + token.value, 0);
-                        this.state.wallet.performance.totalValue = totalValue;
-                        
-                        this.updatePortfolioStats();
-                        this.updatePortfolioCharts();
-                    }
+                    this.updateTokenPricesInPortfolio(marketData);
                 }
             }
         } catch (error) {
             console.error('Failed to update market data:', error);
+        }
+    }
+
+    updateTokenPricesInPortfolio(marketData) {
+        const solToken = this.state.wallet.tokens.find(t => t.symbol === 'SOL');
+        if (solToken) {
+            solToken.price = marketData.solPrice;
+            solToken.value = solToken.amount * marketData.solPrice;
+            solToken.change24h = marketData.priceChange24h;
+            
+            const totalValue = this.state.wallet.tokens.reduce((sum, token) => sum + token.value, 0);
+            this.state.wallet.performance.totalValue = totalValue;
+            
+            this.updatePortfolioStats();
+            this.updatePortfolioCharts();
         }
     }
 
@@ -89,6 +903,7 @@
         }
     }
 
+    // CHART METHODS
     updatePortfolioCharts() {
         this.updateAllocationChart();
         this.updatePerformanceChart();
@@ -153,21 +968,7 @@
         return data;
     }
 
-    loadMockMarketData() {
-        this.state.market = {
-            solPrice: 98.50,
-            marketCap: 42000000000,
-            volume24h: 1200000000,
-            priceChange24h: 3.4,
-            sentiment: 'bullish',
-            trending: [],
-            gainers: [],
-            losers: []
-        };
-        
-        this.updateMarketUI();
-    }
-
+    // ONBOARDING METHODS
     showOnboarding() {
         const modalHTML = `
             <div id="welcomeModal" class="modal-overlay">
@@ -243,6 +1044,7 @@
         }
     }
 
+    // UI INITIALIZATION METHODS
     initializeUI() {
         this.setupGlobalSearch();
         this.initializeCharts();
@@ -388,45 +1190,49 @@
                     pointHoverRadius: 8
                 }]
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                },
-                plugins: {
-                    legend: { 
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleColor: '#fff',
-                        bodyColor: '#fff',
-                        borderColor: '#ff6b6b',
-                        borderWidth: 1,
-                        callbacks: {
-                            label: (context) => `${context.parsed.y.toLocaleString()}`
-                        }
-                    }
-                },
-                scales: {
-                    x: { 
-                        grid: { color: 'rgba(255,255,255,0.1)' }, 
-                        ticks: { color: '#888' }
-                    },
-                    y: { 
-                        grid: { color: 'rgba(255,255,255,0.1)' }, 
-                        ticks: { 
-                            color: '#888',
-                            callback: (value) => `${value.toLocaleString()}`
-                        }
-                    }
-                }
-            }
+            options: this.getChartOptions()
         });
         
         this.state.ui.charts.set('portfolio', chart);
+    }
+
+    getChartOptions() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: { 
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0,0,0,0.8)',
+                    titleColor: '#fff',
+                    bodyColor: '#fff',
+                    borderColor: '#ff6b6b',
+                    borderWidth: 1,
+                    callbacks: {
+                        label: (context) => `${context.parsed.y.toLocaleString()}`
+                    }
+                }
+            },
+            scales: {
+                x: { 
+                    grid: { color: 'rgba(255,255,255,0.1)' }, 
+                    ticks: { color: '#888' }
+                },
+                y: { 
+                    grid: { color: 'rgba(255,255,255,0.1)' }, 
+                    ticks: { 
+                        color: '#888',
+                        callback: (value) => `${value.toLocaleString()}`
+                    }
+                }
+            }
+        };
     }
     
     initAllocationChart() {
@@ -497,6 +1303,60 @@
         }).join('');
     }
 
+    // NAVIGATION METHODS
+    switchSection(sectionName) {
+        console.log('🔄 Switching to section:', sectionName);
+        this.state.currentSection = sectionName;
+        
+        document.querySelectorAll('.nav-tab').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        
+        const activeTab = document.querySelector(`[onclick*="${sectionName}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
+        
+        document.querySelectorAll('.section').forEach(section => {
+            section.classList.remove('active');
+        });
+        
+        const targetSection = document.getElementById(sectionName);
+        if (targetSection) {
+            targetSection.classList.add('active');
+        }
+        
+        this.loadSectionData(sectionName);
+        this.trackEvent('section_viewed', { section: sectionName });
+        this.showToast(`Switched to ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}`, 'info', 1500);
+    }
+
+    async loadSectionData(sectionName) {
+        switch (sectionName) {
+            case 'portfolio':
+                if (this.state.wallet.connected) {
+                    await this.refreshPortfolioData();
+                }
+                break;
+            case 'analytics':
+                await this.loadAnalyticsData();
+                break;
+            case 'market':
+                await this.loadMarketData();
+                break;
+            case 'whale':
+                await this.loadWhaleData();
+                break;
+            case 'alerts':
+                this.renderAlerts();
+                break;
+            case 'social':
+                await this.loadSocialData();
+                break;
+        }
+    }
+
+    // EVENT LISTENERS
     setupEventListeners() {
         window.addEventListener('resize', () => this.handleResize());
         
@@ -529,6 +1389,7 @@
         });
     }
 
+    // UI UTILITY METHODS
     showLoadingOverlay(message = 'Loading...') {
         const overlay = document.getElementById('loadingOverlay');
         const status = document.getElementById('loadingStatus');
@@ -639,6 +1500,7 @@
         return this.sessionId;
     }
 
+    // STATE MANAGEMENT METHODS
     async loadUserState() {
         try {
             const saved = localStorage.getItem('cypher_user_state');
@@ -659,48 +1521,7 @@
         }
     }
 
-    async checkExistingWalletConnection() {
-        if (window.phantom?.solana?.isConnected) {
-            try {
-                const response = await window.phantom.solana.connect({ onlyIfTrusted: true });
-                if (response.publicKey) {
-                    this.state.wallet.connected = true;
-                    this.state.wallet.publicKey = response.publicKey.toString();
-                    await this.loadRealWalletData();
-                    this.updateWalletUI();
-                    this.showToast('Wallet auto-connected!', 'success');
-                }
-            } catch (error) {
-                console.log('No trusted connection found');
-            }
-        }
-    }
-
-    async loadSectionData(sectionName) {
-        switch (sectionName) {
-            case 'portfolio':
-                if (this.state.wallet.connected) {
-                    await this.refreshPortfolioData();
-                }
-                break;
-            case 'analytics':
-                await this.loadAnalyticsData();
-                break;
-            case 'market':
-                await this.loadMarketData();
-                break;
-            case 'whale':
-                await this.loadWhaleData();
-                break;
-            case 'alerts':
-                this.renderAlerts();
-                break;
-            case 'social':
-                await this.loadSocialData();
-                break;
-        }
-    }
-
+    // PLACEHOLDER METHODS (to be implemented)
     initializeTooltips() {
         console.log('Tooltips initialized');
     }
@@ -738,7 +1559,7 @@
     }
 }
 
-// Utility Classes
+// UTILITY CLASSES
 class DataCache {
     constructor() {
         this.cache = new Map();
@@ -798,16 +1619,16 @@ class APIManager {
     }
 }
 
-// Global App Instance
+// GLOBAL INITIALIZATION
 const app = new CypherApp();
 
-// Global Function Assignments
+// GLOBAL FUNCTION ASSIGNMENTS
 window.app = app;
 window.connectWallet = () => app.connectWallet();
 window.switchSection = (section) => app.switchSection(section);
 window.showHelp = () => app.showToast('Help system coming soon!', 'info');
 
-// Chart Functions
+// CHART FUNCTIONS
 window.changeChartTimeframe = (timeframe) => {
     const chart = app.state.ui.charts.get('portfolio');
     if (chart) {
@@ -819,7 +1640,7 @@ window.changeChartTimeframe = (timeframe) => {
     }
 };
 
-// Portfolio Functions
+// PORTFOLIO FUNCTIONS
 window.sortHoldings = () => {
     const sortBy = document.getElementById('sortHoldings')?.value || 'value';
     app.showToast(`Holdings sorted by ${sortBy}`, 'info', 1500);
@@ -839,7 +1660,7 @@ window.refreshPortfolio = async () => {
     }
 };
 
-// Alert Functions
+// ALERT FUNCTIONS
 window.openAlertModal = () => {
     app.showToast('Alert creation modal coming soon!', 'info');
 };
@@ -856,7 +1677,7 @@ window.clearAlertHistory = () => {
     app.showToast('Alert history cleared', 'info');
 };
 
-// Whale Functions
+// WHALE FUNCTIONS
 window.openFollowModal = () => {
     app.showToast('Follow wallet modal coming soon!', 'info');
 };
@@ -869,7 +1690,7 @@ window.filterWhaleMovements = (filter) => {
     app.showToast(`Filtered by ${filter}`, 'info');
 };
 
-// Market Functions
+// MARKET FUNCTIONS
 window.filterTrending = (timeframe) => {
     app.showToast(`Trending filtered by ${timeframe}`, 'info');
 };
@@ -878,7 +1699,7 @@ window.showMovers = (type) => {
     app.showToast(`Showing ${type}`, 'info');
 };
 
-// Social Functions
+// SOCIAL FUNCTIONS
 window.sharePortfolio = () => {
     app.showToast('Portfolio sharing coming soon!', 'info');
 };
@@ -891,17 +1712,17 @@ window.joinCommunity = () => {
     app.showToast('Community features coming soon!', 'info');
 };
 
-// Benchmark Functions
+// BENCHMARK FUNCTIONS
 window.changeBenchmark = (benchmark) => {
     app.showToast(`Benchmark changed to ${benchmark}`, 'info');
 };
 
-// Analysis Functions
+// ANALYSIS FUNCTIONS
 window.generateAnalysisReport = () => {
     app.showToast('Analysis report generation coming soon!', 'info');
 };
 
-// Additional Missing Functions
+// ADDITIONAL FUNCTIONS
 window.filterLeaderboard = (period) => {
     app.showToast(`Leaderboard filtered by ${period}`, 'info');
 };
@@ -933,778 +1754,4 @@ window.setCustomThreshold = () => {
     if (customValue) {
         app.showToast(`Custom whale threshold set to ${customValue} SOL`, 'info');
     }
-};// Enhanced Cypher Portfolio Analytics - v3.3
-// Clean version with all syntax errors fixed
-
-class CypherApp {
-    constructor() {
-        this.state = {
-            initialized: false,
-            loading: false,
-            currentSection: 'portfolio',
-            
-            user: {
-                isFirstTime: true,
-                preferences: {},
-                onboardingCompleted: false
-            },
-            wallet: {
-                connected: false,
-                publicKey: null,
-                balance: 0,
-                tokens: [],
-                transactions: [],
-                performance: {
-                    totalValue: 0,
-                    dayChange: 0,
-                    dayChangePercent: 0,
-                    totalGain: 0,
-                    totalGainPercent: 0
-                }
-            },
-            
-            market: {
-                solPrice: 0,
-                marketCap: 0,
-                volume24h: 0,
-                priceChange24h: 0,
-                sentiment: 'neutral',
-                trending: [],
-                gainers: [],
-                losers: []
-            },
-            
-            social: {
-                followedWallets: new Map(),
-                whaleMovements: [],
-                leaderboard: [],
-                achievements: new Map(),
-                userRank: null
-            },
-            
-            alerts: {
-                active: [],
-                history: [],
-                settings: {
-                    browserNotifications: true,
-                    emailNotifications: false,
-                    pushNotifications: false
-                }
-            },
-            
-            analytics: {
-                portfolioHistory: [],
-                tradingPatterns: {},
-                riskMetrics: {},
-                benchmarkComparison: {}
-            },
-            
-            ui: {
-                charts: new Map(),
-                modals: new Set(),
-                notifications: [],
-                searchResults: []
-            }
-        };
-        
-        // Working RPC endpoints for 2025
-        this.rpcEndpoints = [
-            'https://solana-mainnet.rpc.extrnode.com',
-            'https://rpc.hellomoon.io',
-            'https://solana.blockpi.network/v1/rpc/public',
-            'https://solana-mainnet.phantom.tech',
-            'https://ssc-dao.genesysgo.net'
-        ];
-        
-        this.solana = {
-            connection: null,
-            currentEndpoint: 0,
-            useApiOnly: false
-        };
-
-        this.cache = new DataCache();
-        this.apiManager = new APIManager();
-
-        this.tokenRegistry = {
-            'So11111111111111111111111111111111111111112': { 
-                symbol: 'SOL', 
-                name: 'Solana', 
-                decimals: 9,
-                coingeckoId: 'solana'
-            },
-            'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v': { 
-                symbol: 'USDC', 
-                name: 'USD Coin', 
-                decimals: 6,
-                coingeckoId: 'usd-coin'
-            },
-            'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263': { 
-                symbol: 'BONK', 
-                name: 'Bonk', 
-                decimals: 5,
-                coingeckoId: 'bonk'
-            },
-            'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB': { 
-                symbol: 'USDT', 
-                name: 'Tether USD', 
-                decimals: 6,
-                coingeckoId: 'tether'
-            },
-            'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So': {
-                symbol: 'mSOL',
-                name: 'Marinade SOL',
-                decimals: 9,
-                coingeckoId: 'marinade-staked-sol'
-            },
-            'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn': {
-                symbol: 'JitoSOL',
-                name: 'Jito Staked SOL',
-                decimals: 9,
-                coingeckoId: 'jito-staked-sol'
-            }
-        };
-        
-        this.init();
-    }
-    
-    async init() {
-        try {
-            this.showLoadingOverlay('Initializing Cypher...');
-            
-            await this.loadUserState();
-            await this.initSolanaConnectionSafely();
-            this.setupEventListeners();
-            this.initializeUI();
-            await this.loadInitialMarketData();
-            await this.checkExistingWalletConnection();
-            
-            if (this.state.user.isFirstTime && !this.state.wallet.connected) {
-                setTimeout(() => this.showOnboarding(), 1000);
-            }
-            
-            this.state.initialized = true;
-            this.hideLoadingOverlay();
-            this.startRealTimeUpdates();
-            
-            console.log('🚀 Cypher initialized successfully');
-            
-        } catch (error) {
-            console.error('❌ Failed to initialize Cypher:', error);
-            this.showError('Failed to initialize application. Please refresh the page.');
-            this.hideLoadingOverlay();
-        }
-    }
-
-    async initSolanaConnectionSafely() {
-        this.updateLoadingStatus('Connecting to Solana network...');
-        
-        if (typeof solanaWeb3 === 'undefined') {
-            console.error('❌ Solana Web3.js not loaded - using API-only mode');
-            this.solana.useApiOnly = true;
-            return;
-        }
-
-        for (let i = 0; i < this.rpcEndpoints.length; i++) {
-            try {
-                console.log(`🔄 Testing RPC: ${this.rpcEndpoints[i]}`);
-                
-                const connection = new solanaWeb3.Connection(
-                    this.rpcEndpoints[i], 
-                    'confirmed'
-                );
-                
-                const testPromise = connection.getLatestBlockhash();
-                const timeoutPromise = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error('Timeout')), 3000)
-                );
-                
-                await Promise.race([testPromise, timeoutPromise]);
-                
-                this.solana.connection = connection;
-                this.solana.currentEndpoint = i;
-                console.log(`✅ Connected to: ${this.rpcEndpoints[i]}`);
-                this.showToast('Blockchain connection established', 'success', 2000);
-                return;
-                
-            } catch (error) {
-                console.warn(`❌ RPC ${this.rpcEndpoints[i]} failed: ${error.message}`);
-                continue;
-            }
-        }
-        
-        console.warn('❌ All RPC endpoints failed - switching to API-only mode');
-        this.solana.connection = null;
-        this.solana.useApiOnly = true;
-        this.showToast('Using market data only (RPC unavailable)', 'warning', 3000);
-    }
-
-    async loadRealWalletData() {
-        if (!this.state.wallet.connected) {
-            console.log('❌ Wallet not connected');
-            return;
-        }
-
-        if (!this.solana.connection || this.solana.useApiOnly) {
-            console.log('📡 No RPC connection - using enhanced demo data');
-            this.showToast('Wallet connected! RPC unavailable - showing demo portfolio with live prices.', 'info', 4000);
-            await this.loadEnhancedDemoData();
-            return;
-        }
-
-        try {
-            this.updateLoadingStatus('Loading wallet data...');
-            
-            const publicKey = new solanaWeb3.PublicKey(this.state.wallet.publicKey);
-            const solBalance = await this.getSolBalanceWithRetry(publicKey);
-            const tokenAccounts = await this.getTokenAccountsWithRetry(publicKey);
-            const processedTokens = await this.processTokenAccounts(tokenAccounts, solBalance);
-            
-            this.state.wallet.balance = solBalance;
-            this.state.wallet.tokens = processedTokens.tokens;
-            this.state.wallet.performance = processedTokens.performance;
-            
-            this.updateWalletUI();
-            this.updatePortfolioCharts();
-            
-            console.log('✅ Real wallet data loaded successfully');
-            this.showToast('Portfolio loaded with live blockchain data!', 'success');
-            
-        } catch (error) {
-            console.error('❌ Error loading wallet data:', error);
-            this.showToast('Blockchain error - using demo data with live prices', 'warning');
-            await this.loadEnhancedDemoData();
-        }
-    }
-
-    async loadEnhancedDemoData() {
-        try {
-            const marketData = await this.fetchMarketDataFromCoinGecko();
-            const solPrice = marketData?.solPrice || 98.50;
-            
-            this.state.wallet.balance = 12.5;
-            this.state.wallet.tokens = [
-                {
-                    address: 'So11111111111111111111111111111111111111112',
-                    symbol: 'SOL',
-                    name: 'Solana',
-                    amount: 12.5,
-                    price: solPrice,
-                    value: 12.5 * solPrice,
-                    change24h: marketData?.priceChange24h || 3.2,
-                    isNative: true
-                },
-                {
-                    address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-                    symbol: 'USDC',
-                    name: 'USD Coin',
-                    amount: 450.0,
-                    price: 1.0,
-                    value: 450.0,
-                    change24h: 0.1,
-                    isNative: false
-                },
-                {
-                    address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',
-                    symbol: 'mSOL',
-                    name: 'Marinade SOL',
-                    amount: 5.8,
-                    price: solPrice * 1.05,
-                    value: 5.8 * solPrice * 1.05,
-                    change24h: 2.8,
-                    isNative: false
-                }
-            ];
-            
-            await this.updateDemoTokenPrices();
-            
-            const totalValue = this.state.wallet.tokens.reduce((sum, token) => sum + token.value, 0);
-            this.state.wallet.performance.totalValue = totalValue;
-            this.state.wallet.performance.dayChange = totalValue * 0.032;
-            this.state.wallet.performance.dayChangePercent = 3.2;
-
-            this.updateWalletUI();
-            this.updatePortfolioCharts();
-            
-        } catch (error) {
-            console.error('Failed to load enhanced demo data:', error);
-            this.loadBasicMockData();
-        }
-    }
-
-    async updateDemoTokenPrices() {
-        try {
-            const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=solana,usd-coin,marinade-staked-sol&vs_currencies=usd&include_24hr_change=true'
-            );
-            
-            if (response.ok) {
-                const prices = await response.json();
-                
-                if (prices.solana) {
-                    const solToken = this.state.wallet.tokens.find(t => t.symbol === 'SOL');
-                    if (solToken) {
-                        solToken.price = prices.solana.usd;
-                        solToken.value = solToken.amount * prices.solana.usd;
-                        solToken.change24h = prices.solana.usd_24h_change || 0;
-                    }
-                }
-                
-                if (prices['marinade-staked-sol']) {
-                    const msolToken = this.state.wallet.tokens.find(t => t.symbol === 'mSOL');
-                    if (msolToken) {
-                        msolToken.price = prices['marinade-staked-sol'].usd;
-                        msolToken.value = msolToken.amount * prices['marinade-staked-sol'].usd;
-                        msolToken.change24h = prices['marinade-staked-sol'].usd_24h_change || 0;
-                    }
-                }
-            }
-        } catch (error) {
-            console.warn('Failed to update demo token prices:', error);
-        }
-    }
-
-    loadBasicMockData() {
-        this.state.wallet.balance = 12.5;
-        this.state.wallet.tokens = [
-            {
-                address: 'So11111111111111111111111111111111111111112',
-                symbol: 'SOL',
-                name: 'Solana',
-                amount: 12.5,
-                price: 98.50,
-                value: 1231.25,
-                change24h: 3.2,
-                isNative: true
-            },
-            {
-                address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-                symbol: 'USDC',
-                name: 'USD Coin',
-                amount: 450.0,
-                price: 1.0,
-                value: 450.0,
-                change24h: 0.1,
-                isNative: false
-            }
-        ];
-        
-        this.state.wallet.performance.totalValue = 1681.25;
-        this.state.wallet.performance.dayChange = 53.8;
-        this.state.wallet.performance.dayChangePercent = 3.2;
-
-        this.updateWalletUI();
-        this.updatePortfolioCharts();
-    }
-
-    async getSolBalanceWithRetry(publicKey, maxRetries = 2) {
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                const balance = await this.solana.connection.getBalance(publicKey);
-                return balance / solanaWeb3.LAMPORTS_PER_SOL;
-            } catch (error) {
-                console.warn(`SOL balance fetch attempt ${i + 1} failed:`, error);
-                if (i === maxRetries - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-    }
-
-    async getTokenAccountsWithRetry(publicKey, maxRetries = 2) {
-        for (let i = 0; i < maxRetries; i++) {
-            try {
-                const accounts = await this.solana.connection.getParsedTokenAccountsByOwner(
-                    publicKey,
-                    { 
-                        programId: new solanaWeb3.PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') 
-                    }
-                );
-                
-                return accounts.value.filter(account => {
-                    const amount = account.account.data.parsed.info.tokenAmount.uiAmount;
-                    return amount && amount > 0;
-                });
-                
-            } catch (error) {
-                console.warn(`Token accounts fetch attempt ${i + 1} failed:`, error);
-                if (i === maxRetries - 1) throw error;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
-    }
-
-    async processTokenAccounts(tokenAccounts, solBalance) {
-        const tokens = [];
-        
-        const solPrice = this.state.market.solPrice || 0;
-        const solValue = solBalance * solPrice;
-        let totalValue = solValue;
-        
-        tokens.push({
-            address: 'So11111111111111111111111111111111111111112',
-            symbol: 'SOL',
-            name: 'Solana',
-            amount: solBalance,
-            price: solPrice,
-            value: solValue,
-            change24h: this.state.market.priceChange24h || 0,
-            isNative: true
-        });
-
-        const tokenList = [];
-        tokenAccounts.forEach(account => {
-            const tokenInfo = account.account.data.parsed.info;
-            const mint = tokenInfo.mint;
-            const amount = tokenInfo.tokenAmount.uiAmount;
-            
-            const tokenMeta = this.tokenRegistry[mint] || {
-                symbol: mint.slice(0, 4) + '...',
-                name: 'Unknown Token',
-                decimals: tokenInfo.tokenAmount.decimals,
-                coingeckoId: null
-            };
-
-            tokenList.push({
-                address: mint,
-                symbol: tokenMeta.symbol,
-                name: tokenMeta.name,
-                amount: amount,
-                price: 0,
-                value: 0,
-                change24h: 0,
-                isNative: false,
-                coingeckoId: tokenMeta.coingeckoId
-            });
-        });
-
-        if (tokenList.length > 0) {
-            try {
-                const prices = await this.fetchTokenPricesFromCoinGecko(tokenList);
-                
-                tokenList.forEach(token => {
-                    if (token.coingeckoId && prices[token.coingeckoId]) {
-                        const priceData = prices[token.coingeckoId];
-                        token.price = priceData.usd || 0;
-                        token.change24h = priceData.usd_24h_change || 0;
-                        token.value = token.amount * token.price;
-                        totalValue += token.value;
-                    }
-                });
-            } catch (error) {
-                console.warn('Failed to fetch token prices:', error);
-            }
-        }
-
-        tokens.push(...tokenList);
-        tokens.sort((a, b) => b.value - a.value);
-
-        const previousValue = this.state.wallet.performance.totalValue || totalValue;
-        const dayChange = totalValue - previousValue;
-        const dayChangePercent = previousValue > 0 ? (dayChange / previousValue) * 100 : 0;
-
-        return {
-            tokens,
-            performance: {
-                totalValue,
-                dayChange,
-                dayChangePercent,
-                totalGain: 0,
-                totalGainPercent: 0
-            }
-        };
-    }
-
-    async loadInitialMarketData() {
-        try {
-            this.updateLoadingStatus('Loading market data...');
-            
-            const marketData = await this.fetchMarketDataFromCoinGecko();
-            
-            if (marketData) {
-                this.state.market = { ...this.state.market, ...marketData };
-                this.updateMarketUI();
-                console.log('✅ Market data loaded successfully');
-            } else {
-                throw new Error('Failed to fetch market data');
-            }
-            
-        } catch (error) {
-            console.error('❌ Failed to load market data:', error);
-            this.loadMockMarketData();
-        }
-    }
-
-    async fetchMarketDataFromCoinGecko() {
-        try {
-            const response = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true',
-                {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    }
-                }
-            );
-
-            if (!response.ok) {
-                throw new Error(`CoinGecko API error: ${response.status}`);
-            }
-
-            const data = await response.json();
-            const solData = data.solana;
-
-            if (!solData) {
-                throw new Error('Invalid CoinGecko response');
-            }
-
-            return {
-                solPrice: solData.usd || 0,
-                marketCap: solData.usd_market_cap || 0,
-                volume24h: solData.usd_24h_vol || 0,
-                priceChange24h: solData.usd_24h_change || 0
-            };
-
-        } catch (error) {
-            console.error('CoinGecko API failed:', error);
-            return null;
-        }
-    }
-
-    async fetchTokenPricesFromCoinGecko(tokens) {
-        try {
-            const geckoIds = tokens.map(token => {
-                const tokenInfo = this.tokenRegistry[token.address];
-                return tokenInfo?.coingeckoId;
-            }).filter(Boolean);
-
-            if (geckoIds.length === 0) {
-                return {};
-            }
-
-            const response = await fetch(
-                `https://api.coingecko.com/api/v3/simple/price?ids=${geckoIds.join(',')}&vs_currencies=usd&include_24hr_change=true`
-            );
-
-            if (!response.ok) {
-                throw new Error(`CoinGecko price API error: ${response.status}`);
-            }
-
-            return await response.json();
-
-        } catch (error) {
-            console.error('Token price fetch failed:', error);
-            return {};
-        }
-    }
-
-    switchSection(sectionName) {
-        console.log('🔄 Switching to section:', sectionName);
-        this.state.currentSection = sectionName;
-        
-        document.querySelectorAll('.nav-tab').forEach(tab => {
-            tab.classList.remove('active');
-        });
-        
-        const activeTab = document.querySelector(`[onclick*="${sectionName}"]`);
-        if (activeTab) {
-            activeTab.classList.add('active');
-        }
-        
-        document.querySelectorAll('.section').forEach(section => {
-            section.classList.remove('active');
-        });
-        
-        const targetSection = document.getElementById(sectionName);
-        if (targetSection) {
-            targetSection.classList.add('active');
-        }
-        
-        this.loadSectionData(sectionName);
-        this.trackEvent('section_viewed', { section: sectionName });
-        this.showToast(`Switched to ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}`, 'info', 1500);
-    }
-    
-    async connectWallet(walletType = 'auto') {
-        try {
-            console.log('🔗 Attempting wallet connection...');
-            this.showLoadingOverlay('Connecting wallet...');
-            
-            let walletAdapter;
-            
-            if (walletType === 'auto' || walletType === 'phantom') {
-                walletAdapter = this.getPhantomWallet();
-                if (!walletAdapter && walletType === 'auto') {
-                    walletAdapter = this.getSolflareWallet() || this.getBackpackWallet();
-                }
-            } else if (walletType === 'solflare') {
-                walletAdapter = this.getSolflareWallet();
-            } else if (walletType === 'backpack') {
-                walletAdapter = this.getBackpackWallet();
-            }
-            
-            if (!walletAdapter) {
-                this.hideLoadingOverlay();
-                this.showWalletInstallationHelp(walletType === 'auto' ? 'phantom' : walletType);
-                return false;
-            }
-            
-            this.updateLoadingStatus('Requesting wallet connection...');
-            
-            const response = await walletAdapter.connect({ onlyIfTrusted: false });
-            
-            if (response.publicKey) {
-                this.state.wallet.connected = true;
-                this.state.wallet.publicKey = response.publicKey.toString();
-                
-                this.updateLoadingStatus('Loading wallet data...');
-                
-                await this.loadRealWalletData();
-                this.updateWalletUI();
-                await this.checkAchievements();
-                
-                this.hideLoadingOverlay();
-                this.showToast('Wallet connected successfully! 🎉', 'success');
-                this.trackEvent('wallet_connected', { wallet_type: walletType });
-                
-                return true;
-            }
-            
-        } catch (error) {
-            console.error('Wallet connection error:', error);
-            this.hideLoadingOverlay();
-            
-            if (error.code === 4001 || error.message?.includes('User rejected')) {
-                this.showToast('Connection cancelled by user', 'warning');
-            } else if (error.code === -32002) {
-                this.showToast('Connection request pending. Please check your wallet.', 'info');
-            } else {
-                this.showToast(`Connection failed: ${error.message}`, 'error');
-                if (error.message.includes('not found')) {
-                    this.showWalletInstallationHelp(walletType);
-                }
-            }
-            
-            return false;
-        }
-    }
-    
-    getPhantomWallet() {
-        if (window.phantom?.solana?.isPhantom) return window.phantom.solana;
-        if (window.solana?.isPhantom) return window.solana;
-        return null;
-    }
-    
-    getSolflareWallet() {
-        if (window.solflare?.isSolflare) return window.solflare;
-        return null;
-    }
-    
-    getBackpackWallet() {
-        if (window.backpack?.isBackpack) return window.backpack;
-        return null;
-    }
-    
-    showWalletInstallationHelp(walletType) {
-        const walletUrls = {
-            phantom: 'https://phantom.app/',
-            solflare: 'https://solflare.com/',
-            backpack: 'https://backpack.app/'
-        };
-        
-        const url = walletUrls[walletType];
-        if (url) {
-            const shouldOpen = confirm(`${walletType.charAt(0).toUpperCase() + walletType.slice(1)} wallet not found. Would you like to install it?`);
-            if (shouldOpen) {
-                window.open(url, '_blank');
-            }
-        }
-    }
-
-    updateWalletUI() {
-        const connectBtn = document.getElementById('connectWallet');
-        if (connectBtn && this.state.wallet.connected) {
-            connectBtn.innerHTML = `
-                <i class="fas fa-check-circle"></i> 
-                <span>${this.state.wallet.publicKey.slice(0, 4)}...${this.state.wallet.publicKey.slice(-4)}</span>
-            `;
-            connectBtn.classList.add('connected');
-        }
-        
-        this.updatePortfolioStats();
-        this.updateHoldingsList();
-    }
-
-    updatePortfolioStats() {
-        const performance = this.state.wallet.performance;
-        
-        const totalValueEl = document.getElementById('totalValue');
-        if (totalValueEl) {
-            totalValueEl.textContent = `$${performance.totalValue.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            })}`;
-        }
-        
-        const tokenCountEl = document.getElementById('tokenCount');
-        if (tokenCountEl) {
-            tokenCountEl.textContent = this.state.wallet.tokens.length;
-        }
-
-        const portfolioGainEl = document.getElementById('portfolioGain');
-        const gainAmountEl = document.getElementById('gainAmount');
-        if (portfolioGainEl && gainAmountEl) {
-            const isPositive = performance.dayChangePercent >= 0;
-            portfolioGainEl.textContent = `${isPositive ? '+' : ''}${performance.dayChangePercent.toFixed(2)}%`;
-            portfolioGainEl.className = `stat-value ${isPositive ? 'positive' : 'negative'}`;
-            
-            gainAmountEl.textContent = `${isPositive ? '+' : ''}$${Math.abs(performance.dayChange).toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            })}`;
-            gainAmountEl.className = `stat-change ${isPositive ? 'positive' : 'negative'}`;
-        }
-
-        const centerValueEl = document.getElementById('centerValue');
-        if (centerValueEl) {
-            centerValueEl.textContent = `$${Math.round(performance.totalValue).toLocaleString()}`;
-        }
-
-        const totalChangeEl = document.getElementById('totalChange');
-        if (totalChangeEl && this.state.wallet.connected) {
-            const isPositive = performance.dayChangePercent >= 0;
-            totalChangeEl.innerHTML = `<span class="${isPositive ? 'positive' : 'negative'}">${isPositive ? '+' : ''}${performance.dayChangePercent.toFixed(2)}% today</span>`;
-        }
-    }
-
-    updateHoldingsList() {
-        const tokenListEl = document.getElementById('tokenList');
-        if (!tokenListEl) return;
-
-        if (this.state.wallet.tokens.length === 0) {
-            tokenListEl.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-wallet" style="font-size: 3rem; margin-bottom: 1rem; opacity: 0.3;"></i>
-                    <h4>No Holdings Found</h4>
-                    <p>Your portfolio appears to be empty or we couldn't load your token data.</p>
-                    <button class="btn btn-primary" onclick="refreshPortfolio()">
-                        <i class="fas fa-refresh"></i> Refresh Portfolio
-                    </button>
-                </div>
-            `;
-            return;
-        }
-
-        tokenListEl.innerHTML = this.state.wallet.tokens.map(token => {
-            const isPositive = token.change24h >= 0;
-            const changeClass = isPositive ? 'positive' : 'negative';
-            const changeIcon = isPositive ? 'fa-arrow-up' : 'fa-arrow-down';
-            
-            return `
-                <div class="token-item" style="display: flex; align-items: center; padding: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <div class="token-icon" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; margin-right: 1rem;">
-                        ${token.symbol.charAt(0)}
-                    </div>
-                    <div class="token-info" style="flex: 1;">
-                        <div class="token-symbol" style="font-weight: 600; color: #ffffff; font-size: 1rem;">${token.symbol}</div>
-                        <div class="token-name" style="color: #a3a3a3; font-size: 0.875rem;">${token.name}</div>
-                    </div>
-                    <div class="token-amount" style="text
+};
